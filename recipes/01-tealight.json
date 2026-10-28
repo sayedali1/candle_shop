@@ -1,0 +1,122 @@
+{
+ "name": "Beeswax tealight in a clear cup, spiral on top",
+ "turn": 0.2,
+ "size": 1.15,
+ "shadow": 1.8,
+ "materials": {
+  "cup": {
+   "kind": "glass",
+   "opacity": 0.2
+  },
+  "honey": {
+   "kind": "wax",
+   "color": "#e0ab1c",
+   "bump": 0.2,
+   "finish": "glossy"
+  }
+ },
+ "parts": [
+  {
+   "shape": "lathe",
+   "material": "cup",
+   "profile": [
+    [
+     0,
+     0
+    ],
+    [
+     0.42,
+     0
+    ],
+    [
+     0.5,
+     0.02
+    ],
+    [
+     0.56,
+     0.36
+    ],
+    [
+     0.55,
+     0.4
+    ],
+    [
+     0.52,
+     0.4
+    ],
+    [
+     0.52,
+     0.37
+    ],
+    [
+     0.46,
+     0.05
+    ],
+    [
+     0,
+     0.05
+    ]
+   ]
+  },
+  {
+   "shape": "lathe",
+   "material": "honey",
+   "profile": [
+    [
+     0,
+     0.04
+    ],
+    [
+     0.46,
+     0.04
+    ],
+    [
+     0.535,
+     0.35
+    ],
+    [
+     0.5,
+     0.36
+    ],
+    [
+     0,
+     0.36
+    ]
+   ]
+  },
+  {
+   "shape": "spiral",
+   "material": "honey",
+   "count": 3,
+   "ring": 0.25,
+   "turns": 1.5,
+   "r0": 0.012,
+   "r1": 0.15,
+   "tube": 0.04,
+   "y": 0.375
+  },
+  {
+   "shape": "torus",
+   "material": "cup",
+   "r": 0.545,
+   "tube": 0.016,
+   "pos": [
+    0,
+    0.395,
+    0
+   ]
+  }
+ ],
+ "wicks": [
+  {
+   "kind": "cotton",
+   "base": 0.365,
+   "tip": 0.495,
+   "color": "#f4f0e6",
+   "radius": 0.012
+  }
+ ],
+ "flame": {
+  "size": 0.7
+ }
+}

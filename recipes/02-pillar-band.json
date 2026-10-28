@@ -1,0 +1,80 @@
+{
+ "name": "Cream pillar with a dark band, matte",
+ "turn": -0.15,
+ "size": 1.0,
+ "shadow": 1.4,
+ "materials": {
+  "cream": {
+   "kind": "matte",
+   "color": "#ead996",
+   "roughness": 0.88
+  },
+  "band": {
+   "kind": "solid",
+   "color": "#0f121b",
+   "roughness": 0.55,
+   "side": "double",
+   "glow": 0.03
+  }
+ },
+ "parts": [
+  {
+   "shape": "lathe",
+   "material": "cream",
+   "profile": [
+    [
+     0,
+     0
+    ],
+    [
+     0.37,
+     0
+    ],
+    [
+     0.38,
+     0.02
+    ],
+    [
+     0.38,
+     0.86
+    ],
+    [
+     0.365,
+     0.9
+    ],
+    [
+     0.3,
+     0.905
+    ],
+    [
+     0,
+     0.905
+    ]
+   ]
+  },
+  {
+   "shape": "cylinder",
+   "material": "band",
+   "r": 0.386,
+   "h": 0.16,
+   "open": true,
+   "pos": [
+    0,
+    0.25,
+    0
+   ]
+  }
+ ],
+ "wicks": [
+  {
+   "kind": "cotton",
+   "base": 0.9,
+   "tip": 1.02,
+   "color": "#f0e8d0",
+   "radius": 0.009
+  }
+ ],
+ "flame": {
+  "size": 1.0
+ }
+}

@@ -1,0 +1,72 @@
+{
+ "name": "Plain white pillar with a melt pool and a long dark wick",
+ "turn": 0.1,
+ "size": 1.0,
+ "shadow": 1.4,
+ "materials": {
+  "white": {
+   "kind": "wax",
+   "color": "#f4efe4",
+   "roughness": 0.55,
+   "bump": 0.2,
+   "sheen": 0
+  }
+ },
+ "parts": [
+  {
+   "shape": "lathe",
+   "material": "white",
+   "profile": [
+    [
+     0,
+     0
+    ],
+    [
+     0.41,
+     0
+    ],
+    [
+     0.42,
+     0.03
+    ],
+    [
+     0.42,
+     0.93
+    ],
+    [
+     0.405,
+     0.96
+    ],
+    [
+     0.32,
+     0.97
+    ],
+    [
+     0.17,
+     0.955
+    ],
+    [
+     0.07,
+     0.935
+    ],
+    [
+     0,
+     0.93
+    ]
+   ]
+  }
+ ],
+ "wicks": [
+  {
+   "kind": "long",
+   "base": 0.93,
+   "tip": 1.15,
+   "color": "#2a1f18",
+   "radius": 0.011,
+   "tilt": -0.03
+  }
+ ],
+ "flame": {
+  "size": 1.0
+ }
+}

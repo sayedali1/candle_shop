@@ -1,0 +1,101 @@
+{
+ "name": "Speckled ceramic cup, white wax, flat wooden wick",
+ "turn": -0.2,
+ "size": 1.0,
+ "shadow": 1.7,
+ "materials": {
+  "wall": {
+   "kind": "glaze",
+   "texture": {
+    "kind": "ceramic",
+    "glaze": "#f3f0e8",
+    "clay": "#d8aa8c",
+    "specks": [
+     "#1f3f9a",
+     "#6a3b20"
+    ],
+    "split": 0.48
+   },
+   "roughness": 0.55,
+   "side": "double"
+  },
+  "glazeWhite": {
+   "kind": "glaze",
+   "color": "#f3f0e8",
+   "roughness": 0.4
+  },
+  "glazeIn": {
+   "kind": "glaze",
+   "color": "#f3f0e8",
+   "roughness": 0.4,
+   "side": "back"
+  },
+  "soy": {
+   "kind": "wax",
+   "color": "#faf6ee",
+   "roughness": 0.32,
+   "glow": 0.4,
+   "bump": 0.1
+  }
+ },
+ "parts": [
+  {
+   "shape": "cylinder",
+   "material": "wall",
+   "r": 0.5,
+   "rb": 0.46,
+   "h": 0.8,
+   "open": true,
+   "pos": [
+    0,
+    0.4,
+    0
+   ]
+  },
+  {
+   "shape": "torus",
+   "material": "glazeWhite",
+   "r": 0.485,
+   "tube": 0.034,
+   "pos": [
+    0,
+    0.8,
+    0
+   ]
+  },
+  {
+   "shape": "cylinder",
+   "material": "glazeIn",
+   "r": 0.47,
+   "h": 0.3,
+   "open": true,
+   "pos": [
+    0,
+    0.65,
+    0
+   ]
+  },
+  {
+   "shape": "disc",
+   "material": "soy",
+   "r": 0.47,
+   "pos": [
+    0,
+    0.72,
+    0
+   ]
+  }
+ ],
+ "wicks": [
+  {
+   "kind": "wood",
+   "base": 0.72,
+   "tip": 0.94,
+   "width": 0.17
+  }
+ ],
+ "flame": {
+  "size": 0.95,
+  "width": 1.7
+ }
+}

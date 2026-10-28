@@ -1,0 +1,432 @@
+/* Brand: warm hearth (chosen 2026-10-28). The name, wordmark and taglines are still placeholders. */
+:root{
+  --bg:#120c08; --bg-glow:#2a1809; --text:#f5e9d6; --muted:rgba(245,233,214,.7);
+  --amber:#e8a14a; --on-amber:#1e1006;
+  --font:'Cairo','Segoe UI',Tahoma,system-ui,sans-serif;
+  --gutter:clamp(16px,5vw,64px);
+}
+*{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+html{-webkit-text-size-adjust:100%}
+body{font-family:var(--font);background:var(--bg);color:var(--text);line-height:1.6;-webkit-font-smoothing:antialiased;overflow-x:hidden}
+a{color:inherit;text-decoration:none}
+/* Arabic: never add letter-spacing or uppercase, they break the joined letters */
+
+.top{position:fixed;inset:0 0 auto 0;z-index:10;display:flex;justify-content:space-between;align-items:center;padding:calc(1rem + env(safe-area-inset-top)) var(--gutter) 1rem;background:linear-gradient(rgba(18,12,8,.75),transparent)}
+.brand{font-weight:700;font-size:1.15rem}
+
+.btn{display:inline-block;background:var(--amber);color:var(--on-amber);padding:.9rem 1.8rem;border-radius:999px;font-weight:700;font-size:1rem;transition:transform .2s,box-shadow .2s}
+.btn:hover{transform:translateY(-2px);box-shadow:0 10px 28px rgba(232,161,74,.35)}
+.btn-small{padding:.5rem 1.1rem;font-size:.9rem}
+:focus-visible{outline:2px solid var(--amber);outline-offset:3px;border-radius:8px}
+
+/* the hero: a tall section with a sticky stage */
+.hero{position:relative;height:260vh}
+.stage{position:sticky;top:0;height:100svh;overflow:hidden}
+/* the candle: one fixed scene behind everything; the sections sit on top of it */
+.candle-bg{position:fixed;inset:0;z-index:0;pointer-events:none;opacity:0;transition:opacity 1.6s ease}
+.candle-bg.ready{opacity:1}
+#candle{position:absolute;inset:0;width:100%;height:100%;display:block}
+.hero,.about,.products,.end{position:relative;z-index:1}
+.film{position:fixed;inset:0;z-index:3;pointer-events:none}
+/* fine film grain over the scene: hides banding in the dark gradients and makes it feel photographed */
+.film::before{content:"";position:absolute;inset:0;opacity:.1;mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='160' height='160'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E")}
+.copy,.cta{z-index:2}
+.film::after{content:"";position:absolute;inset:0;background:radial-gradient(ellipse at 50% 55%,transparent 45%,rgba(0,0,0,.5) 100%)}   /* soft vignette */
+.fallback{display:none;position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:.55}
+.stage.no3d .fallback{display:block}
+html.no3d .candle-bg{display:none}
+
+.copy{position:absolute;inset-inline:0;top:clamp(5.2rem,13vh,8rem);text-align:center;padding:0 var(--gutter);pointer-events:none;text-shadow:0 2px 30px rgba(0,0,0,.6)}
+.copy-b{opacity:0}
+.label{font-size:1rem;color:var(--amber);font-weight:600;margin-bottom:.4rem}
+h1{font-size:clamp(2.6rem,8.5vw,5.6rem);font-weight:700;line-height:1.15}
+h2{font-size:clamp(1.9rem,5.5vw,3.4rem);font-weight:700;line-height:1.2}
+.copy-b p{color:var(--muted);margin-top:.6rem}
+
+/* the headline arrives softly, then the button breathes */
+@keyframes rise{from{opacity:0;transform:translateY(22px)}to{opacity:1;transform:none}}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(232,161,74,0)}50%{box-shadow:0 0 28px 4px rgba(232,161,74,.28)}}
+.copy-a .label{animation:rise 1s .5s both}
+.copy-a h1{animation:rise 1.2s .75s both}
+.cta{animation:pulse 3.4s ease-in-out infinite}
+.cta{position:absolute;left:50%;bottom:calc(1.2rem + env(safe-area-inset-bottom));translate:-50% 0;white-space:nowrap}
+.cta:hover{translate:-50% -2px}
+
+.end{padding:3rem var(--gutter) calc(3rem + env(safe-area-inset-bottom));text-align:center;color:var(--muted);font-size:.9rem}
+
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+
+/* ABOUT: promise line and the steps timeline. Text is placeholder until the client supplies facts. */
+.wrap{width:min(1000px,100% - var(--gutter)*2);margin-inline:auto}
+/* the candle burns beside About: no veil, the text sits on the scene */
+.about{min-height:170vh;padding:clamp(4rem,10vw,8rem) 0;background:none}
+.kicker{display:flex;justify-content:center;align-items:center;gap:.7rem;color:var(--amber);font-weight:600;margin-bottom:1rem}
+.tag{font-size:.72rem;font-weight:600;padding:.15rem .65rem;border:1px dashed rgba(232,161,74,.6);border-radius:999px;color:var(--amber)}
+.promise{text-align:center;font-size:clamp(2rem,6.5vw,4rem);max-width:18ch;margin:0 auto clamp(3rem,7vw,5rem)}
+
+.steps{list-style:none;position:relative;display:grid;gap:2.2rem;max-width:640px;margin-inline:auto}
+.steps::before{content:"";position:absolute;inset-block:1.5rem;inset-inline-start:calc(1.5rem - 1px);width:2px;background:linear-gradient(var(--amber),rgba(232,161,74,.08))}
+.steps li{display:grid;grid-template-columns:3rem 1fr;gap:1.2rem;align-items:start}
+.num{position:relative;z-index:1;width:3rem;height:3rem;border-radius:50%;background:var(--bg);border:2px solid var(--amber);display:grid;place-items:center;font-weight:700;font-size:1.2rem;color:var(--amber)}
+.steps h3{font-size:1.4rem;line-height:1.3;margin-bottom:.2rem}
+.steps p{color:var(--muted)}
+
+
+.reveal{opacity:0;transform:translateY(24px);transition:opacity .9s ease,transform 1s cubic-bezier(.16,1,.3,1)}
+.reveal.in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){.reveal{opacity:1;transform:none}}
+
+/* ---------- one scene: the candle's light on the content, soft glass, no hard edges ---------- */
+/* a warm glow centred on the flame; its position and strength come from candle.js (--lx, --ly, --li) */
+.candle-light{position:fixed;inset:0;z-index:2;pointer-events:none;mix-blend-mode:screen;
+  background:radial-gradient(circle at var(--lx,50%) var(--ly,50%),rgba(255,176,90,calc(.3 * var(--li,0))) 0,rgba(255,140,60,calc(.11 * var(--li,0))) 26%,rgba(255,120,40,0) 58%)}
+/* cards are soft glass, with no outline */
+/* wide screens: the candle takes the left of the page while you read About, and the text sits on the right */
+@media (min-width:900px){
+  .about .wrap{padding-left:44%}
+  .about .promise{text-align:start;margin-inline:0;max-width:16ch}
+  .about .kicker{justify-content:flex-start}
+  .about .steps{margin-inline:0;max-width:none}
+}
+
+/* readability over the candle: a soft shadow behind the About text */
+.about{text-shadow:0 2px 18px rgba(0,0,0,.65)}
+
+/* ---------- FAQ: one soft glass panel, topic groups, a side list on wide screens ---------- */
+.faq{padding:clamp(4rem,10vw,8rem) 0;position:relative;z-index:1}
+.faq-layout{display:grid;grid-template-columns:200px 1fr;gap:clamp(1.5rem,4vw,3rem);margin-top:clamp(2rem,5vw,3rem);align-items:start}
+.faq-nav{position:sticky;top:6rem;display:grid;gap:.35rem}
+.faq-nav a{padding:.5rem .8rem;border-radius:12px;color:var(--muted);font-weight:600;transition:background .2s,color .2s}
+.faq-nav a:hover{background:rgba(245,233,214,.07);color:var(--text)}
+.faq-panel{background:linear-gradient(rgba(255,232,200,.07),rgba(255,232,200,.025));box-shadow:inset 0 0 0 1px rgba(255,214,160,.06);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);border-radius:22px;padding:clamp(1rem,3vw,2rem)}
+.faq-group{scroll-margin-top:6rem}
+.faq-group+.faq-group{margin-top:1.6rem}
+.faq-group h3{color:var(--amber);font-size:1.15rem;margin-bottom:.2rem}
+.faq details{border-top:1px solid rgba(245,233,214,.1)}
+.faq-group h3+details{border-top:0}
+.faq summary{list-style:none;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:1rem;padding:1rem 0;min-height:44px;font-weight:600}
+.faq summary::-webkit-details-marker{display:none}
+.faq summary::after{content:"";flex:none;width:1.7rem;height:1.7rem;border-radius:50%;background:rgba(245,233,214,.08) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 12 12'%3E%3Cpath d='M2 4.5l4 4 4-4' fill='none' stroke='%23e8a14a' stroke-width='1.6' stroke-linecap='round' stroke-linejoin='round'/%3E%3C/svg%3E") center/.75rem no-repeat;transition:transform .25s ease}
+.faq details[open] summary::after{transform:rotate(180deg)}
+.faq details p{color:var(--muted);padding:0 0 1.1rem;max-width:60ch}
+@media (max-width:899px){.faq-layout{grid-template-columns:1fr}.faq-nav{display:none}}
+
+/* ---------- PRODUCTS: a shelf you walk along (no cards) ---------- */
+.products{padding:clamp(4rem,10vw,8rem) 0}
+.shelf-hint{text-align:center;color:var(--muted);margin-top:-.2rem}
+.shelf{--w:clamp(210px,64vw,300px);overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin-top:clamp(1.5rem,4vw,2.5rem);padding:2.4rem 0 1rem;outline-offset:-6px}
+.shelf::-webkit-scrollbar{display:none}
+.shelf-row{display:flex;gap:clamp(1rem,3vw,2.2rem);width:max-content;padding-inline:calc(50vw - var(--w) / 2)}   /* so the first and the last candle can both reach the middle */
+.shelf-item{flex:none;width:var(--w);scroll-snap-align:center;display:flex;flex-direction:column;align-items:center;gap:.9rem;cursor:pointer}
+.shelf-item .img{position:relative;width:100%;aspect-ratio:3/4}
+.shelf-item img{display:block;width:100%;height:100%;object-fit:cover;transition:filter .6s ease,transform .6s ease;-webkit-mask-image:radial-gradient(ellipse 50% 50% at 50% 50%,#000 34%,transparent 100%);mask-image:radial-gradient(ellipse 50% 50% at 50% 50%,#000 34%,transparent 100%)}
+.shelf-item .img::before{content:"";position:absolute;inset:-18%;background:radial-gradient(circle,rgba(255,170,80,.34),transparent 62%);opacity:0;transition:opacity .6s ease;pointer-events:none}
+.shelf-item .img::after{content:"";position:absolute;inset-inline:-1.6rem;bottom:-.5rem;height:3px;border-radius:3px;background:linear-gradient(90deg,transparent,rgba(190,130,70,.55),transparent)}   /* a thin wooden shelf */
+.shelf-meta{text-align:center;display:flex;flex-direction:column;align-items:center;gap:.35rem;min-height:10.5rem}
+.shelf-meta h3{font-size:1.4rem}
+.shelf-meta p{color:var(--muted)}
+/* with JavaScript: only the candle in the middle is lit and shows its text */
+.shelf.js .shelf-item img{filter:brightness(.42) saturate(.6);transform:scale(.88)}
+.shelf.js .shelf-item.is-active img{filter:none;transform:translateY(-10px) scale(1.06)}
+.shelf.js .shelf-item.is-active .img::before{opacity:1}
+.shelf.js .shelf-item:not(.is-active) .shelf-meta{opacity:0;visibility:hidden;transition:opacity .3s ease,visibility 0s .3s}
+.shelf.js .shelf-item.is-active .shelf-meta{opacity:1;visibility:visible;transition:opacity .5s ease .15s}
+.shelf-ctrl{display:flex;justify-content:center;gap:.8rem;margin-top:.4rem}
+.shelf-ctrl[hidden]{display:none}
+.shelf-ctrl button{width:46px;height:46px;border-radius:50%;border:0;background:rgba(245,233,214,.09);color:var(--text);font:inherit;font-size:1.6rem;line-height:1;cursor:pointer;transition:background .2s}
+.shelf-ctrl button:hover{background:rgba(245,233,214,.18)}
+/* the room's light also moves to the lit candle (set by page.js); the candle's own glow is the first layer */
+@property --sx{syntax:'<length>';inherits:true;initial-value:50vw}
+@property --sy{syntax:'<length>';inherits:true;initial-value:50vh}
+@property --si{syntax:'<number>';inherits:true;initial-value:0}
+:root{transition:--sx .7s ease,--sy .7s ease,--si .7s ease}
+.candle-light{background:
+  radial-gradient(circle at var(--lx,50%) var(--ly,50%),rgba(255,176,90,calc(.3 * var(--li,0))) 0,rgba(255,140,60,calc(.11 * var(--li,0))) 26%,rgba(255,120,40,0) 58%),
+  radial-gradient(circle at var(--sx) var(--sy),rgba(255,176,90,calc(.24 * var(--si))) 0,rgba(255,140,60,calc(.09 * var(--si))) 30%,rgba(255,120,40,0) 62%)}
+/* with 3D running the candles are drawn on the page's canvas behind the shelf, so the stand-in photos (kept for when 3D cannot run) step aside */
+.shelf.is3d .img img{display:none}
+.shelf.is3d .img::before{display:none}
+/* the stand-in photos are only for when 3D cannot run: while the page loads they stay hidden, so a reload never flashes a photo before the 3D candle */
+.shelf.js .img img{visibility:hidden}
+html.no3d .shelf.js .img img{visibility:visible}
+
+/* ---------- PRODUCT DETAIL: a soft glass panel that opens when a candle is pressed ---------- */
+.detail-open{display:none;background:none;border:1px solid rgba(245,233,214,.35);color:var(--text);font:inherit;font-size:.9rem;padding:.4rem 1rem;border-radius:999px;cursor:pointer;transition:background .2s,border-color .2s}
+.detail-open:hover{background:rgba(245,233,214,.1);border-color:var(--amber)}
+.shelf.js .detail-open{display:inline-block}
+.detail-scrim{position:fixed;inset:0;background:rgba(8,5,3,.5);-webkit-backdrop-filter:blur(3px);backdrop-filter:blur(3px);z-index:30;opacity:0;transition:opacity .4s}
+.detail-scrim.open{opacity:1}
+.detail{position:fixed;z-index:31;inset-block:0;inset-inline-end:0;width:min(420px,94vw);background:linear-gradient(180deg,rgba(34,21,12,.92),rgba(20,12,7,.94));-webkit-backdrop-filter:blur(22px);backdrop-filter:blur(22px);border-inline-start:1px solid rgba(232,161,74,.28);box-shadow:0 0 80px rgba(0,0,0,.55);transform:translateX(-104%);visibility:hidden;transition:transform .55s cubic-bezier(.2,.7,.2,1),visibility 0s .55s;display:flex;flex-direction:column;outline:none}
+.detail.open{transform:none;visibility:visible;transition:transform .55s cubic-bezier(.2,.7,.2,1)}
+.detail-close{position:absolute;top:.8rem;inset-inline-start:.8rem;width:40px;height:40px;border-radius:50%;border:0;background:rgba(15,9,5,.55);-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);color:var(--text);font-size:1.5rem;line-height:1;cursor:pointer;z-index:2;transition:background .2s}
+.detail-close:hover{background:rgba(15,9,5,.8)}
+.detail-body{overflow-y:auto;overscroll-behavior:contain;flex:1;display:flex;flex-direction:column;scrollbar-width:thin;scrollbar-color:rgba(232,161,74,.35) transparent}
+.detail-body>*{flex:none}
+.detail-in{padding:1.3rem 1.5rem 1.6rem;display:flex;flex-direction:column;gap:1.5rem}
+.detail:not(.has-shot) .detail-in{padding-top:4rem}
+.shot{position:relative;margin:0;aspect-ratio:4/3.1;overflow:hidden}
+.shot img{width:100%;height:100%;object-fit:cover;display:block;transform:scale(1.08);transition:transform 1.6s cubic-bezier(.2,.7,.2,1)}
+.detail.open .shot img{transform:scale(1)}
+.shot::after{content:"";position:absolute;inset:auto 0 0 0;height:55%;background:linear-gradient(180deg,transparent,rgba(24,15,9,.97))}
+.shot figcaption{position:absolute;inset-inline:1.5rem;bottom:.7rem;z-index:1;font-size:.72rem;color:rgba(245,233,214,.6);display:flex;gap:.6rem;align-items:center}
+.shot figcaption .tag{background:rgba(15,9,5,.5)}
+.detail h3{font-size:2rem;line-height:1.15;margin:0}
+.detail .kick{display:flex;align-items:center;gap:.6rem;margin-bottom:.5rem}
+.detail .lead{color:var(--muted);margin:.35rem 0 0}
+.detail .rule{height:1px;border:0;background:linear-gradient(90deg,transparent,rgba(232,161,74,.5),transparent);margin:0}
+.detail h4{font-size:.82rem;letter-spacing:.05em;color:var(--amber);margin:0 0 .7rem;font-weight:700;display:flex;align-items:center;gap:.5rem}
+.detail h4::after{content:"";flex:1;height:1px;background:rgba(245,233,214,.12)}
+.facts{display:grid;grid-template-columns:1fr 1fr;gap:.6rem;margin:0}
+.facts div{background:rgba(245,233,214,.055);border:1px solid rgba(245,233,214,.08);border-radius:14px;padding:.75rem .9rem;display:grid;grid-template-columns:auto 1fr;column-gap:.65rem;align-items:center}
+.facts svg{grid-row:span 2;width:22px;height:22px;stroke:var(--amber);fill:none;stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.facts dt{font-size:.72rem;color:var(--muted)}
+.facts dd{margin:0;font-weight:700;font-size:.98rem}
+.notes{display:grid;gap:.15rem}
+.note{display:grid;grid-template-columns:auto 4.2rem 1fr;align-items:center;gap:.8rem;padding:.55rem 0;border-bottom:1px solid rgba(245,233,214,.08)}
+.note:last-child{border-bottom:0}
+.note i{width:calc(.5rem + var(--s)*.35rem);height:calc(.5rem + var(--s)*.35rem);border-radius:50%;background:radial-gradient(circle at 35% 30%,#ffd9a0,var(--amber) 55%,#a86a22);opacity:calc(.55 + var(--s)*.15)}
+.note span{color:var(--muted);font-size:.85rem}
+.note b{font-weight:600}
+.detail p{margin:0;line-height:1.75}
+.care{margin:0;padding:0;list-style:none;display:grid;gap:.55rem}
+.care li{position:relative;padding-inline-start:1.5rem;line-height:1.6}
+.care li::before{content:"";position:absolute;inset-inline-start:.1rem;top:.5rem;width:.5rem;height:.75rem;border-radius:50% 50% 50% 50%/65% 65% 35% 35%;background:linear-gradient(180deg,#ffe2ad,var(--amber))}
+.callout{background:rgba(232,161,74,.09);border:1px solid rgba(232,161,74,.22);border-radius:14px;padding:.9rem 1rem}
+.detail-foot{padding:.9rem 1.5rem calc(.9rem + env(safe-area-inset-bottom));border-top:1px solid rgba(245,233,214,.1);background:rgba(18,11,7,.8)}
+.detail-foot .btn{display:block;text-align:center;width:100%}
+.detail.open .detail-in>*{animation:rise .7s cubic-bezier(.2,.7,.2,1) both}
+.detail.open .detail-in>*:nth-child(1){animation-delay:.12s}.detail.open .detail-in>*:nth-child(2){animation-delay:.18s}.detail.open .detail-in>*:nth-child(3){animation-delay:.24s}
+.detail.open .detail-in>*:nth-child(4){animation-delay:.3s}.detail.open .detail-in>*:nth-child(5){animation-delay:.36s}.detail.open .detail-in>*:nth-child(6){animation-delay:.42s}
+.detail.open .detail-in>*:nth-child(7){animation-delay:.48s}.detail.open .detail-in>*:nth-child(8){animation-delay:.54s}
+@keyframes rise{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:none}}
+@media (max-width:860px){
+  .detail{inset-block:auto 0;inset-inline:0;width:auto;max-height:64vh;border-inline-start:0;border-top:1px solid rgba(232,161,74,.28);border-radius:24px 24px 0 0;transform:translateY(104%)}
+  .detail.open{transform:none}
+  .shot{aspect-ratio:16/9}
+  .detail h3{font-size:1.7rem}
+}
+@media (prefers-reduced-motion:reduce){.detail,.detail-scrim,.shot img{transition:none}.detail.open .detail-in>*{animation:none}}
+
+/* ---------- ABOUT as part of the candle's light: a fuse with an ember, no circles, no boxes ---------- */
+@property --p{syntax:'<number>';inherits:true;initial-value:0}
+.about .promise{text-shadow:0 0 46px rgba(255,170,80,.28),0 2px 18px rgba(0,0,0,.65)}
+.steps{--p:0;transition:--p .3s linear;gap:2.4rem}
+.steps li{grid-template-columns:2.2rem 1fr;gap:1.1rem}
+.steps::before{inset-block:.4rem;inset-inline-start:calc(1.1rem - 1px);width:2px;background:rgba(245,233,214,.13)}
+.steps::after{content:"";position:absolute;inset-block-start:.4rem;inset-inline-start:calc(1.1rem - 1px);width:2px;height:calc((100% - .8rem) * var(--p));background:linear-gradient(rgba(232,161,74,.25),#ffd9a0);box-shadow:0 0 10px rgba(255,170,80,.55);border-radius:2px}
+.fuse{position:absolute;inset-inline-start:calc(1.1rem - 8px);top:calc(.4rem + (100% - .8rem) * var(--p) - 8px);width:16px;height:16px;border-radius:50%;background:radial-gradient(circle,#fff3d6 0,#ffb454 40%,rgba(255,150,60,0) 72%);box-shadow:0 0 22px 6px rgba(255,160,70,.55);animation:ember 1.6s ease-in-out infinite;pointer-events:none}
+@keyframes ember{50%{transform:scale(1.25);opacity:.85}}
+.num{width:2.2rem;height:auto;border:0;background:none;border-radius:0;display:block;font-size:1.15rem;color:var(--amber);transition:color .6s,text-shadow .6s;padding-top:.15rem}
+.steps.js li{opacity:.34;transition:opacity .7s ease}
+.steps.js li.lit{opacity:1}
+.steps li.lit .num{color:#ffe2b0;text-shadow:0 0 14px rgba(255,170,80,.8)}
+.steps li.lit h3{color:#fff1da}
+@media (prefers-reduced-motion:reduce){.fuse{animation:none}.steps{transition:none}}
+
+/* ---------- About headline and steps: words stay together in lines, on every width ---------- */
+html{-webkit-text-size-adjust:100%;text-size-adjust:100%}            /* phones must not enlarge the text on their own */
+body{overflow-x:clip}
+.promise,.about .promise{max-width:none;text-wrap:balance;line-height:1.3;font-size:clamp(1.75rem,7vw,2.6rem)}
+.about .promise{margin-bottom:clamp(2.2rem,6vw,3.4rem)}
+.steps p{text-wrap:pretty}
+.steps h3{text-wrap:balance}
+@media (min-width:900px){
+  .promise,.about .promise{font-size:clamp(2.2rem,3.6vw,3.3rem);max-width:none}
+  .about .wrap{padding-left:40%}
+}
+
+/* the headline breaks only between its two phrases, never inside one, so no line is left with a lone word */
+.promise span{display:inline-block;white-space:nowrap}
+.promise,.about .promise{font-size:clamp(1.5rem,min(8.5vw,3.6vw + 1rem),3.3rem)}
+
+/* ---------- BRAND: warm hearth. Dark brown, amber and cream; classic Naskh letters for titles, Cairo for reading ---------- */
+h1,h2,h3,.brand,.promise{font-family:'Amiri','Cairo',serif;font-weight:700}
+.promise{line-height:1.45}
+
+/* ---------- critique fixes (2026-10-28): phone legibility, pacing, dialog, small targets, ending ---------- */
+.tag{font-size:.82rem}
+.btn-small{min-height:44px;display:inline-flex;align-items:center}
+.detail-open{min-height:44px}
+.detail-close{width:44px;height:44px}
+.shot figcaption{font-size:.78rem;color:rgba(245,233,214,.82)}
+.sr-only{position:absolute;width:1px;height:1px;margin:-1px;padding:0;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+/* pacing: a shorter walk to the first candle */
+.hero{height:200vh}
+.about{min-height:140vh}
+.products{padding-top:clamp(3rem,7vw,5rem)}
+.shelf{padding-top:0}
+.shelf-item .img{aspect-ratio:1/1.05}
+/* the fixed header keeps the wordmark readable over any section */
+.top{background:linear-gradient(rgba(18,12,8,.92),rgba(18,12,8,.55) 55%,transparent)}
+/* shelf controls: drawn chevrons and a position count */
+.shelf-ctrl{align-items:center}
+.shelf-ctrl button{display:grid;place-items:center;font-size:0}
+.shelf-ctrl svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.shelf-count{min-width:4.4rem;text-align:center;color:var(--muted);font-variant-numeric:tabular-nums}
+/* the ending: one clear invitation before the credit line */
+.closing{padding:clamp(4rem,10vw,7rem) 0 clamp(2rem,5vw,3rem);text-align:center;position:relative;z-index:1}
+.closing p{color:var(--muted);margin:.8rem auto 1.6rem;max-width:36ch}
+.closing .btn{padding:1rem 2.4rem;font-size:1.1rem}
+/* About on a phone: the candle burns behind the steps, so the text gets a soft dark veil that fades out at its edges */
+@media (max-width:899px){
+  .about .wrap{position:relative;isolation:isolate}
+  .about .wrap::before{content:"";position:absolute;z-index:-1;inset:-3rem -1rem;background:linear-gradient(transparent,rgba(18,12,8,.74) 14%,rgba(18,12,8,.74) 86%,transparent)}
+  .steps.js li{opacity:.62}
+  .steps.js li.lit{opacity:1}
+  .steps p{color:rgba(245,233,214,.88)}
+}
+/* the detail sheet on a phone: facts first, the photo after them */
+@media (max-width:860px){
+  .detail .detail-in{padding-top:3.4rem}
+  .detail .shot{order:2;margin:0 1.5rem 1.5rem;border-radius:14px;aspect-ratio:16/10}
+}
+
+/* ---------- critique round 2 (2026-10-28) ---------- */
+/* About: unlit steps stay readable (they are real content); on phones the veil is lighter and the candle is lifted clear of the text */
+.steps.js li{opacity:.76}
+.steps.js li.lit{opacity:1}
+@media (max-width:899px){
+  .about .wrap::before{background:linear-gradient(transparent,rgba(18,12,8,.62) 14%,rgba(18,12,8,.62) 86%,transparent)}
+  .steps.js li{opacity:.76}
+  .steps.js li.lit{opacity:1}
+}
+/* header: one filled order button visible at a time. It steps aside while the hero button, the shelf or the closing button is on screen */
+.top .btn{transition:opacity .3s ease,visibility 0s}
+.top .btn.away{opacity:0;visibility:hidden;transition:opacity .3s ease,visibility 0s .3s}
+/* ending: a small flame relights the page before the ask */
+.closing .flame{width:56px;height:auto;display:block;margin:0 auto 1.2rem;filter:drop-shadow(0 6px 22px rgba(255,150,60,.5));overflow:visible}
+.closing .flame .f-outer{transform-origin:50% 95%;animation:flick 2.6s ease-in-out infinite}
+.closing .flame .f-core{transform-origin:50% 95%;animation:flick 1.9s ease-in-out infinite reverse}
+@keyframes flick{0%,100%{transform:scale(1,1) skewX(0)}30%{transform:scale(.96,1.05) skewX(-2deg)}60%{transform:scale(1.03,.97) skewX(2deg)}}
+.closing{background:radial-gradient(ellipse 60% 55% at 50% 22%,rgba(232,161,74,.14),transparent 70%)}
+@media (prefers-reduced-motion:reduce){.closing .flame .f-outer,.closing .flame .f-core{animation:none}}
+/* phone shelf: the neighbouring candles peek in at the sides, so the walk-along idea shows */
+@media (max-width:860px){
+  .shelf{--w:clamp(190px,56vw,280px)}
+  .shelf-row{gap:clamp(.4rem,2vw,2rem)}
+}
+/* detail sheet: a pinned header row for the close button, and folded sections for the long text */
+.detail-head{flex:none;display:flex;padding:.5rem .8rem;border-bottom:1px solid rgba(245,233,214,.08);background:rgba(18,11,7,.6)}
+.detail-close{position:static;width:44px;height:44px;display:grid;place-items:center;font-size:0}
+.detail-close svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round}
+.detail:not(.has-shot) .detail-in,.detail .detail-in{padding-top:1.3rem}
+.fold{border-bottom:1px solid rgba(245,233,214,.1)}
+.fold:first-of-type{border-top:1px solid rgba(245,233,214,.1)}
+.fold summary{list-style:none;cursor:pointer;display:flex;justify-content:space-between;align-items:center;padding:.85rem 0;min-height:44px;color:var(--amber);font-weight:700;font-size:.95rem}
+.fold summary::-webkit-details-marker{display:none}
+.fold summary::after{content:"";width:.55rem;height:.55rem;border:solid currentColor;border-width:0 2px 2px 0;transform:rotate(45deg);transition:transform .25s ease;margin-inline-end:.3rem}
+.fold[open] summary::after{transform:rotate(-135deg)}
+.fold>:not(summary){padding-bottom:.9rem}
+@media (max-width:860px){.detail .detail-in{padding-top:1.1rem}}
+
+/* ---------- critique round 3 (2026-10-28): buying path, first load, trust, access, shorter About ---------- */
+.skip{position:fixed;inset-inline-start:.8rem;top:-4rem;z-index:50;background:var(--amber);color:var(--on-amber);padding:.6rem 1.1rem;border-radius:999px;font-weight:700;transition:top .2s}
+.skip:focus{top:.8rem}
+/* hero: the headline arrives at once, and a small flame holds the screen while the 3D candle loads */
+.copy-a .label{animation:rise .8s .1s both}
+.copy-a h1{animation:rise 1s .2s both}
+.boot{position:absolute;left:50%;top:52%;translate:-50% -50%;width:44px;height:auto;filter:drop-shadow(0 6px 22px rgba(255,150,60,.5));transition:opacity .9s ease,visibility 0s;overflow:visible;pointer-events:none}
+.boot .f-outer,.boot .f-core{transform-origin:50% 95%;animation:flick 2.4s ease-in-out infinite}
+.boot .f-core{animation-duration:1.8s;animation-direction:reverse}
+.stage.ready .boot,.stage.no3d .boot{opacity:0;visibility:hidden;transition:opacity .9s ease,visibility 0s .9s}
+@media (prefers-reduced-motion:reduce){.boot .f-outer,.boot .f-core{animation:none}}
+/* the header is firm, so the wordmark never collides with text scrolling under it */
+.top{background:linear-gradient(rgba(18,12,8,.97),rgba(18,12,8,.97) 62%,transparent)}
+/* shelf card: facts line, readable names for the dimmed candles, one filled button and a quiet details link */
+.facts-line{color:var(--text);font-weight:600;font-size:.95rem}
+.shelf-tag{position:absolute;inset-inline:0;top:calc(100% + 1.1rem);text-align:center;font-size:.85rem;color:var(--muted);transition:opacity .3s ease}
+.shelf-item.is-active .shelf-tag{opacity:0}
+.shelf-meta .btn{order:2}
+.detail-open{order:3;border:0;background:none;text-decoration:underline;text-underline-offset:.35em;text-decoration-color:rgba(245,233,214,.4);padding:.4rem .8rem}
+.detail-open:hover{background:none;text-decoration-color:var(--amber)}
+/* the sheet's small labels are larger and brighter */
+.facts dt{font-size:.8rem;color:rgba(245,233,214,.86)}
+/* About is shorter now that the materials block is gone (wax, wick and scent live in each candle's sheet) */
+.about{min-height:110vh}
+@media (max-width:899px){
+  .steps.js li{opacity:.84}
+  .steps p{color:rgba(245,233,214,.95)}
+}
+/* maker and reassurance */
+.maker{position:relative;z-index:1;padding:clamp(3rem,8vw,6rem) 0}
+.maker-grid{display:grid;grid-template-columns:auto 1fr;gap:clamp(1.2rem,4vw,2.4rem);align-items:center;margin-top:clamp(1.6rem,4vw,2.4rem)}
+.maker-photo{width:clamp(96px,22vw,150px);aspect-ratio:1;border-radius:50%;border:2px dashed rgba(232,161,74,.5);display:grid;place-items:center;text-align:center;padding:.5rem}
+.maker-grid p{color:var(--muted);margin-bottom:1rem}
+.promises{display:grid}
+.promises div{display:grid;grid-template-columns:6.5rem 1fr;gap:1rem;border-top:1px solid rgba(245,233,214,.12);padding:.85rem 0}
+.promises div:last-child{border-bottom:1px solid rgba(245,233,214,.12)}
+.promises dt{color:var(--amber);font-weight:700}
+.promises dd{margin:0;color:var(--muted)}
+.closing .reassure{margin:-.8rem auto 1.4rem;font-size:.9rem}
+@media (max-width:560px){.maker-grid{grid-template-columns:1fr;justify-items:center;text-align:center}.promises{text-align:start;width:100%}}
+
+/* MANY SHELVES: each collection is one shelf with a small title; the rules of version 2 follow */
+.collection-head{text-align:center}
+
+/* MANY SHELVES, version 2: plain rows of candles under small titles, and one shared bar for the selected candle */
+.collection{margin-top:clamp(1.2rem,3vw,2rem)}
+.collection-head h3{font-size:clamp(1.2rem,3.4vw,1.7rem)}
+.collection .shelf{--w:clamp(118px,34vw,190px);margin-top:.2rem;padding-bottom:2.2rem}
+.collection .shelf-item{gap:0}
+.collection .shelf-tag{top:calc(100% + .8rem);font-size:.8rem}
+.collection .shelf-item.is-active .shelf-tag{opacity:1;color:var(--text)}
+.collection .shelf-item.is-focus .shelf-tag{color:var(--amber);font-weight:700}
+.pick{position:sticky;bottom:.8rem;z-index:6;display:flex;align-items:center;justify-content:space-between;gap:1rem;width:min(600px,100% - 1.6rem);margin:1.4rem auto 0;padding:.65rem .9rem .65rem 1rem;border-radius:20px;background:rgba(18,12,8,.9);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:1px solid rgba(245,233,214,.16);box-shadow:0 10px 30px rgba(0,0,0,.45)}
+.pick-info{min-width:0}
+.pick-name{font-size:1.15rem;line-height:1.25;margin:0}
+.pick-facts{color:var(--muted);font-size:.82rem;margin:0}
+.pick-actions{display:flex;align-items:center;gap:.3rem;flex:none}
+.pick .detail-open{display:inline-block;padding:.4rem .6rem}
+@media (max-width:520px){.pick{gap:.5rem;padding:.55rem .7rem}.pick .btn-small{padding:.5rem .85rem}}
+
+/* ---------- shelves: rows start at the edge of the screen (no empty half), and each has arrows for the mouse ---------- */
+.collection{position:relative}
+.collection .shelf-row{padding-inline:clamp(1rem,4vw,3rem);margin-inline:auto}      /* a short row stays centred, a long one scrolls from the edge */
+.shelf-arrow{position:absolute;top:56%;z-index:3;width:46px;height:46px;border-radius:50%;border:1px solid rgba(245,233,214,.18);background:rgba(18,12,8,.82);color:var(--text);display:grid;place-items:center;cursor:pointer;transition:background .2s,opacity .25s,border-color .2s}
+.shelf-arrow:hover{background:rgba(40,26,15,.95);border-color:var(--amber)}
+.shelf-arrow svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.shelf-arrow.prev{inset-inline-start:clamp(.4rem,1.5vw,1.2rem)}
+.shelf-arrow.next{inset-inline-end:clamp(.4rem,1.5vw,1.2rem)}
+.shelf-arrow[aria-disabled="true"]{opacity:.22;pointer-events:none}
+@media (max-width:640px){.shelf-arrow{width:40px;height:40px}}
+
+/* the shelves scroll inside themselves: nothing of them may widen the page (it used to slide sideways and leave the right side empty) */
+.products{overflow-x:clip}
+
+/* the shared order bar only appears while a shelf is on screen (it used to show early, over the end of About) */
+.pick{opacity:0;visibility:hidden;transform:translateY(10px);transition:opacity .3s ease,transform .3s ease,visibility 0s .3s}
+.pick.show{opacity:1;visibility:visible;transform:none;transition:opacity .3s ease,transform .3s ease}
+@media (prefers-reduced-motion:reduce){.pick,.pick.show{transition:none}}
+
+.pick-facts{text-wrap:balance}
+@media (max-width:520px){.pick-facts{font-size:.78rem}}
+
+/* ---------- hero: a cue to scroll, and smooth scrolling to the shelf ---------- */
+@media (prefers-reduced-motion:no-preference){html{scroll-behavior:smooth}}
+#products{scroll-margin-top:3.5rem}
+.cue{position:absolute;left:50%;bottom:calc(5.4rem + env(safe-area-inset-bottom));translate:-50% 0;z-index:2;pointer-events:none}
+.cue-in{display:grid;justify-items:center;gap:.45rem;color:var(--muted);font-size:.85rem;animation:rise .9s 3s both}
+.cue-line{position:relative;display:block;width:1px;height:36px;background:linear-gradient(transparent,rgba(232,161,74,.55));overflow:hidden}
+.cue-line::after{content:"";position:absolute;left:-1px;top:-8px;width:3px;height:8px;border-radius:2px;background:#ffd9a0;animation:cue 2.2s 3.6s ease-in infinite}
+@keyframes cue{0%{top:-8px;opacity:0}20%{opacity:1}100%{top:36px;opacity:0}}
+@media (prefers-reduced-motion:reduce){.cue-in{animation:none}.cue-line::after{animation:none;top:14px}}
+
+/* ---------- motion (2026-10-28): light and its going out; everything else stays quiet ---------- */
+:root{--ease:cubic-bezier(.16,1,.3,1)}
+/* the ending flame lights itself when you arrive (from small and dark), then keeps flickering */
+.closing .flame{transform-origin:50% 100%;transition:opacity .9s ease,transform 1.2s var(--ease)}
+.closing .flame.unlit{opacity:0;transform:scale(.25)}
+/* loops sleep while off screen */
+.asleep,.asleep *,.asleep .cue-line::after{animation-play-state:paused!important}
+/* feedback: a press is acknowledged at once */
+.btn:active,.shelf-arrow:active,.detail-close:active,.detail-open:active{transform:scale(.95);transition-duration:.1s}
+.cta:active{transform:scale(.96)}
+/* the order bar: the new name and facts arrive with a short fade and rise */
+.pick-info.swap{animation:pickSwap .4s var(--ease)}
+@keyframes pickSwap{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+/* the detail accordions open and close smoothly where the browser supports animating to auto height */
+@supports (interpolate-size:allow-keywords){
+  .fold{interpolate-size:allow-keywords}
+}
+.fold::details-content{block-size:0;overflow:clip;transition:block-size .3s var(--ease),content-visibility .3s allow-discrete}
+.fold[open]::details-content{block-size:auto}

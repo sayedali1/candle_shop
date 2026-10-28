@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Candle Lab</title>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<style>
+  :root{--bg:#120d09;--panel:#1b140e;--line:#3a2a1c;--text:#f2e6d2;--muted:#b9a88f;--accent:#e8a24a}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 system-ui,Segoe UI,sans-serif;min-height:100vh}
+  .lab{display:grid;grid-template-columns:1fr 400px;gap:0;min-height:100vh}
+  .view{position:relative;min-height:60vh}
+  canvas{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+  canvas:active{cursor:grabbing}
+  .tip{position:absolute;left:14px;bottom:12px;color:var(--muted);font-size:13px;pointer-events:none}
+  aside{background:var(--panel);border-left:1px solid var(--line);padding:16px;display:flex;flex-direction:column;gap:12px;overflow:auto;max-height:100vh}
+  h1{margin:0;font-size:18px} h1 small{color:var(--muted);font-weight:400;font-size:13px}
+  label{display:flex;flex-direction:column;gap:4px;color:var(--muted);font-size:13px}
+  select,button,input[type=file]{font:inherit;color:var(--text);background:#241a12;border:1px solid var(--line);border-radius:8px;padding:7px 10px}
+  button{cursor:pointer} button:hover{border-color:var(--accent)}
+  button[aria-pressed=true]{background:var(--accent);color:#2a1a08;border-color:var(--accent)}
+  .row{display:flex;gap:8px;flex-wrap:wrap}
+  .ref{background:#0d0906;border:1px dashed var(--line);border-radius:10px;min-height:120px;display:flex;align-items:center;justify-content:center;color:var(--muted);font-size:13px;overflow:hidden}
+  .ref img{width:100%;max-height:300px;object-fit:contain;display:block}
+  textarea{width:100%;min-height:260px;resize:vertical;font:12px/1.45 ui-monospace,Consolas,monospace;color:#e9dcc6;background:#0d0906;border:1px solid var(--line);border-radius:8px;padding:10px}
+  .err{color:#ff8f7a;font-size:13px;min-height:1.2em}
+  @media (max-width:860px){.lab{grid-template-columns:1fr}.view{height:62vh;min-height:0}aside{max-height:none;border-left:0;border-top:1px solid var(--line)}}
+</style>
+</head>
+<body>
+<div class="lab">
+  <div class="view"><canvas id="c"></canvas><div class="tip">Drag to turn · wheel or pinch to zoom</div></div>
+  <aside>
+    <h1>Candle Lab <small>compare the 3D candle with the photo, then edit the recipe</small></h1>
+    <label>Recipe <select id="pick"></select></label>
+    <div class="row">
+      <button id="lit" aria-pressed="true">Lit</button>
+      <button id="spin" aria-pressed="false">Auto-turn</button>
+      <button id="save">Save picture</button>
+    </div>
+    <label>Lighting
+      <select id="light">
+        <option value="flame">Flame only (like the page)</option>
+        <option value="room">Warm room (flame + a lamp)</option>
+        <option value="studio">Studio (true colours)</option>
+      </select>
+    </label>
+    <div class="row">
+      <button data-view="front">Front</button><button data-view="three">3/4</button><button data-view="top">From above</button>
+    </div>
+    <label>Reference photo (stays on your computer)<input id="file" type="file" accept="image/*"></label>
+    <div class="ref" id="ref">No photo yet</div>
+    <label>Recipe (JSON). Edits show live.<textarea id="json" spellcheck="false"></textarea></label>
+    <div class="err" id="err"></div>
+    <div class="row"><button id="copy">Copy recipe</button></div>
+  </aside>
+</div>
+<script type="module" src="lab.js"></script>
+</body>
+</html>

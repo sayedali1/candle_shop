@@ -1,0 +1,249 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>علامة تجريبية — شموع مصنوعة يدويًا</title>
+<meta name="description" content="صفحة تجريبية لشموع مصنوعة يدويًا.">
+<meta name="theme-color" content="#120c08">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Amiri:wght@700&display=swap" rel="stylesheet">
+<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js">
+<link rel="stylesheet" href="style.css?v=20">
+<!-- Three.js from a CDN, pinned to one version. If it cannot load, the page shows the photo instead. -->
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+</head>
+<body>
+
+<!-- The candle: ONE fixed 3D scene behind the whole page. Its life is the scroll (see candle.js). -->
+<div class="candle-bg" id="candleBg" aria-hidden="true"><canvas id="candle"></canvas></div>
+<div class="candle-light" aria-hidden="true"></div>
+<div class="film" aria-hidden="true"></div>
+
+<a class="skip" href="#main">انتقل إلى المحتوى</a>
+
+<header class="top">
+  <span class="brand">علامة تجريبية</span>
+  <a class="btn btn-small away" href="https://wa.me/0000000000" target="_blank" rel="noopener" aria-label="اطلب عبر واتساب">واتساب</a>
+</header>
+
+<main id="main">
+
+<!-- HERO: the candle appears and lights itself; scrolling turns it, then it slides aside and burns down behind the page -->
+<section id="hero" class="hero">
+  <div class="stage" id="stage">
+    <img id="fallback" class="fallback" data-src="assets/photos/candle-lit-vase.jpg" alt="شمعة مضاءة بجانب مزهرية" loading="lazy" decoding="async">
+    <svg class="flame boot" viewBox="0 0 60 96" aria-hidden="true"><defs><linearGradient id="fl2" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff8a2a"/><stop offset=".55" stop-color="#ffc26b"/><stop offset="1" stop-color="#fff3d6"/></linearGradient></defs><path class="f-outer" d="M30 4C38 22 52 36 52 58a22 22 0 0 1-44 0C8 44 18 36 22 22c2 8 6 10 8-18z" fill="url(#fl2)"/><path class="f-core" d="M30 40c6 10 12 16 12 26a12 12 0 0 1-24 0c0-8 6-14 12-26z" fill="#fff6e0"/></svg>
+
+    <div class="copy copy-a" id="copyA">
+      <p class="label">شموع مصنوعة يدويًا</p>
+      <h1>ضوء دافئ لبيتك</h1>
+    </div>
+
+    <div class="copy copy-b" id="copyB">
+      <h2>كل شمعة تُصنع بعناية</h2>
+      <p>نص تجريبي للتجربة فقط.</p>
+    </div>
+
+    <!-- A cue that there is more below (fades out as the hero is scrolled) -->
+    <div class="cue" id="cue" aria-hidden="true"><div class="cue-in"><span>مرّر</span><i class="cue-line"></i></div></div>
+
+    <!-- The one action of the hero: see the candles (the shelf). Ordering by WhatsApp starts from a candle on the shelf. -->
+    <a class="btn cta" href="#products">شاهد الشموع</a>
+  </div>
+</section>
+
+<!-- ABOUT: one-line promise, how a candle is made (steps, not invented years). All text is placeholder. -->
+<section id="about" class="about">
+  <div class="wrap">
+    <p class="kicker">من نحن <span class="tag">نص تجريبي</span></p>
+    <h2 class="promise reveal"><span>شمعة صغيرة</span> <span>تضيء تفاصيل يومك</span></h2>
+
+    <!-- How a candle is made: four steps. All text is placeholder. -->
+    <ol class="steps">
+      <li class="reveal"><span class="num">١</span><div><h3>نختار الشمع</h3><p>نص تجريبي: يُكتب هنا نوع الشمع وسبب اختياره.</p></div></li>
+      <li class="reveal"><span class="num">٢</span><div><h3>نضيف العطر</h3><p>نص تجريبي: يُكتب هنا كيف تُختار العطور.</p></div></li>
+      <li class="reveal"><span class="num">٣</span><div><h3>نصبّها يدويًا</h3><p>نص تجريبي: يُكتب هنا وصف الصبّ باليد.</p></div></li>
+      <li class="reveal"><span class="num">٤</span><div><h3>نتركها تتماسك</h3><p>نص تجريبي: يُكتب هنا مدة التجفيف والتجهيز.</p></div></li>
+    </ol>
+  </div>
+</section>
+
+<!-- PRODUCTS: a shelf you walk along. The candle nearest the middle is "lit" and shows its name and order button (page.js).
+     Without JavaScript every item shows its own text and button. Names, texts and photos are all TEST content until the client lists her real candles. -->
+<section id="products" class="products">
+  <div class="wrap">
+    <p class="kicker">المنتجات <span class="tag">نص تجريبي</span></p>
+    <h2 class="promise reveal">اختر شمعتك</h2>
+    <p class="shelf-hint reveal">مرّر على الرفّ أو استخدم الأسهم لتختار شمعة</p>
+  </div>
+  <div class="shelf" id="shelf" tabindex="0" aria-label="رفّ الشموع. مرّر لتختار شمعة">
+    <div class="shelf-row">
+      <div class="shelf-item">
+        <div class="img"><img data-src="assets/photos/candle-three-wood.jpg" alt="" loading="lazy" width="1600" height="1067"></div>
+        <div class="shelf-meta">
+          <span class="tag">نموذج تجريبي</span>
+          <h3>الشمعة ١</h3>
+          <p class="facts-line">٠٠٠ جم · ٠٠ ساعة · نوع العطر</p>
+          <button type="button" class="detail-open" data-detail>التفاصيل</button>
+          <a class="btn btn-small" href="https://wa.me/0000000000?text=%D9%85%D8%B1%D8%AD%D8%A8%D9%8B%D8%A7%D8%8C%20%D8%A3%D8%B1%D9%8A%D8%AF%20%D8%A3%D9%86%20%D8%A3%D8%B7%D9%84%D8%A8%3A%20%D8%A7%D9%84%D8%B4%D9%85%D8%B9%D8%A9%20%D9%A1" target="_blank" rel="noopener">اطلب عبر واتساب</a>
+        </div>
+      </div>
+      <div class="shelf-item">
+        <div class="img"><img data-src="assets/photos/candle-pillars-dark-bands.jpg" alt="" loading="lazy" width="1100" height="1659"></div>
+        <div class="shelf-meta">
+          <span class="tag">نموذج تجريبي</span>
+          <h3>الشمعة ٢</h3>
+          <p class="facts-line">٠٠٠ جم · ٠٠ ساعة · نوع العطر</p>
+          <button type="button" class="detail-open" data-detail>التفاصيل</button>
+          <a class="btn btn-small" href="https://wa.me/0000000000?text=%D9%85%D8%B1%D8%AD%D8%A8%D9%8B%D8%A7%D8%8C%20%D8%A3%D8%B1%D9%8A%D8%AF%20%D8%A3%D9%86%20%D8%A3%D8%B7%D9%84%D8%A8%3A%20%D8%A7%D9%84%D8%B4%D9%85%D8%B9%D8%A9%20%D9%A2" target="_blank" rel="noopener">اطلب عبر واتساب</a>
+        </div>
+      </div>
+      <div class="shelf-item">
+        <div class="img"><img data-src="assets/photos/candle-lit-vase.jpg" alt="" loading="lazy" width="1100" height="1716"></div>
+        <div class="shelf-meta">
+          <span class="tag">نموذج تجريبي</span>
+          <h3>الشمعة ٣</h3>
+          <p class="facts-line">٠٠٠ جم · ٠٠ ساعة · نوع العطر</p>
+          <button type="button" class="detail-open" data-detail>التفاصيل</button>
+          <a class="btn btn-small" href="https://wa.me/0000000000?text=%D9%85%D8%B1%D8%AD%D8%A8%D9%8B%D8%A7%D8%8C%20%D8%A3%D8%B1%D9%8A%D8%AF%20%D8%A3%D9%86%20%D8%A3%D8%B7%D9%84%D8%A8%3A%20%D8%A7%D9%84%D8%B4%D9%85%D8%B9%D8%A9%20%D9%A3" target="_blank" rel="noopener">اطلب عبر واتساب</a>
+        </div>
+      </div>
+      <div class="shelf-item">
+        <div class="img"><img data-src="assets/photos/candle-ceramic-cups.jpg" alt="" loading="lazy" width="1100" height="1462"></div>
+        <div class="shelf-meta">
+          <span class="tag">نموذج تجريبي</span>
+          <h3>الشمعة ٤</h3>
+          <p class="facts-line">٠٠٠ جم · ٠٠ ساعة · نوع العطر</p>
+          <button type="button" class="detail-open" data-detail>التفاصيل</button>
+          <a class="btn btn-small" href="https://wa.me/0000000000?text=%D9%85%D8%B1%D8%AD%D8%A8%D9%8B%D8%A7%D8%8C%20%D8%A3%D8%B1%D9%8A%D8%AF%20%D8%A3%D9%86%20%D8%A3%D8%B7%D9%84%D8%A8%3A%20%D8%A7%D9%84%D8%B4%D9%85%D8%B9%D8%A9%20%D9%A4" target="_blank" rel="noopener">اطلب عبر واتساب</a>
+        </div>
+      </div>
+      <div class="shelf-item">
+        <div class="img"><img data-src="assets/photos/candle-beeswax-hug.jpg" alt="" loading="lazy" width="1100" height="731"></div>
+        <div class="shelf-meta">
+          <span class="tag">نموذج تجريبي</span>
+          <h3>الشمعة ٥</h3>
+          <p class="facts-line">٠٠٠ جم · ٠٠ ساعة · نوع العطر</p>
+          <button type="button" class="detail-open" data-detail>التفاصيل</button>
+          <a class="btn btn-small" href="https://wa.me/0000000000?text=%D9%85%D8%B1%D8%AD%D8%A8%D9%8B%D8%A7%D8%8C%20%D8%A3%D8%B1%D9%8A%D8%AF%20%D8%A3%D9%86%20%D8%A3%D8%B7%D9%84%D8%A8%3A%20%D8%A7%D9%84%D8%B4%D9%85%D8%B9%D8%A9%20%D9%A5" target="_blank" rel="noopener">اطلب عبر واتساب</a>
+        </div>
+      </div>
+      <div class="shelf-item">
+        <div class="img"><img data-src="assets/photos/candle-ribbed-votive.jpg" alt="" loading="lazy" width="1100" height="1648"></div>
+        <div class="shelf-meta">
+          <span class="tag">نموذج تجريبي</span>
+          <h3>الشمعة ٦</h3>
+          <p class="facts-line">٠٠٠ جم · ٠٠ ساعة · نوع العطر</p>
+          <button type="button" class="detail-open" data-detail>التفاصيل</button>
+          <a class="btn btn-small" href="https://wa.me/0000000000?text=%D9%85%D8%B1%D8%AD%D8%A8%D9%8B%D8%A7%D8%8C%20%D8%A3%D8%B1%D9%8A%D8%AF%20%D8%A3%D9%86%20%D8%A3%D8%B7%D9%84%D8%A8%3A%20%D8%A7%D9%84%D8%B4%D9%85%D8%B9%D8%A9%20%D9%A6" target="_blank" rel="noopener">اطلب عبر واتساب</a>
+        </div>
+      </div>
+      <div class="shelf-item">
+        <div class="img"><img data-src="assets/photos/candle-ceramic-cups.jpg" alt="" loading="lazy" width="1100" height="1462"></div>
+        <div class="shelf-meta">
+          <span class="tag">نموذج تجريبي</span>
+          <h3>الشمعة ٧</h3>
+          <p class="facts-line">٠٠٠ جم · ٠٠ ساعة · نوع العطر</p>
+          <button type="button" class="detail-open" data-detail>التفاصيل</button>
+          <a class="btn btn-small" href="https://wa.me/0000000000?text=%D9%85%D8%B1%D8%AD%D8%A8%D9%8B%D8%A7%D8%8C%20%D8%A3%D8%B1%D9%8A%D8%AF%20%D8%A3%D9%86%20%D8%A3%D8%B7%D9%84%D8%A8%3A%20%D8%A7%D9%84%D8%B4%D9%85%D8%B9%D8%A9%20%D9%A7" target="_blank" rel="noopener">اطلب عبر واتساب</a>
+        </div>
+      </div>
+      <div class="shelf-item">
+        <div class="img"><img data-src="assets/photos/candle-drippy-candlestick.jpg" alt="" loading="lazy" width="1100" height="1100"></div>
+        <div class="shelf-meta">
+          <span class="tag">نموذج تجريبي</span>
+          <h3>الشمعة ٨</h3>
+          <p class="facts-line">٠٠٠ جم · ٠٠ ساعة · نوع العطر</p>
+          <button type="button" class="detail-open" data-detail>التفاصيل</button>
+          <a class="btn btn-small" href="https://wa.me/0000000000?text=%D9%85%D8%B1%D8%AD%D8%A8%D9%8B%D8%A7%D8%8C%20%D8%A3%D8%B1%D9%8A%D8%AF%20%D8%A3%D9%86%20%D8%A3%D8%B7%D9%84%D8%A8%3A%20%D8%A7%D9%84%D8%B4%D9%85%D8%B9%D8%A9%20%D9%A8" target="_blank" rel="noopener">اطلب عبر واتساب</a>
+        </div>
+      </div>
+    </div>
+  </div>
+  <div class="shelf-ctrl" id="shelfCtrl" hidden>
+    <button type="button" id="shelfPrev" aria-label="الشمعة السابقة"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg></button>
+    <span class="shelf-count" id="shelfCount" aria-hidden="true">١ / ٨</span>
+    <button type="button" id="shelfNext" aria-label="الشمعة التالية"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg></button>
+  </div>
+  <p class="sr-only" id="shelfLive" aria-live="polite"></p>
+</section>
+
+<!-- FAQ: product questions first, in one soft panel, grouped by topic. All questions and answers are placeholders until the client writes hers. No testimonials: there are no real reviews. -->
+<section id="faq" class="faq">
+  <div class="wrap">
+    <p class="kicker">الأسئلة الشائعة <span class="tag">نص تجريبي</span></p>
+    <h2 class="promise reveal">ما الذي تودّ معرفته؟</h2>
+    <div class="faq-layout reveal">
+      <nav class="faq-nav" aria-label="مواضيع الأسئلة"><a href="#faq-materials">المكوّنات والأمان</a><a href="#faq-care">العناية والاستخدام</a><a href="#faq-scent">العطور</a></nav>
+      <div class="faq-panel">
+        <div class="faq-group" id="faq-materials">
+          <h3>المكوّنات والأمان</h3>
+          <details><summary>ما المواد المستخدمة في صنع الشموع؟</summary><p>نص تجريبي: يُكتب هنا الجواب من صاحبة المتجر.</p></details>
+          <details><summary>هل الشموع آمنة حول الأطفال والحيوانات الأليفة؟</summary><p>نص تجريبي: يُكتب هنا الجواب من صاحبة المتجر.</p></details>
+        </div>
+        <div class="faq-group" id="faq-care">
+          <h3>العناية والاستخدام</h3>
+          <details><summary>كيف أعتني بالشمعة لتدوم أطول؟</summary><p>نص تجريبي: يُكتب هنا الجواب من صاحبة المتجر.</p></details>
+          <details><summary>كم تدوم الشمعة الواحدة؟</summary><p>نص تجريبي: يُكتب هنا الجواب من صاحبة المتجر.</p></details>
+        </div>
+        <div class="faq-group" id="faq-scent">
+          <h3>العطور</h3>
+          <details><summary>ما مدى قوة العطر؟</summary><p>نص تجريبي: يُكتب هنا الجواب من صاحبة المتجر.</p></details>
+          <details><summary>هل يمكنني اختيار عطر معيّن؟</summary><p>نص تجريبي: يُكتب هنا الجواب من صاحبة المتجر.</p></details>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- MAKER: who makes the candles, plus the three answers a first-time buyer needs. TEST text until the client writes hers. -->
+<section class="maker">
+  <div class="wrap">
+    <h2 class="promise reveal">من يصنع شموعك</h2>
+    <div class="maker-grid reveal">
+      <div class="maker-photo" aria-hidden="true"><span class="tag">صورة تجريبية</span></div>
+      <div>
+        <p>نص تجريبي: اسم صاحبة المتجر، ومن أين بدأت، وكلمات قليلة بصوتها.</p>
+        <dl class="promises">
+          <div><dt>التوصيل</dt><dd>نص تجريبي: المناطق ومدة التوصيل.</dd></div>
+          <div><dt>الدفع</dt><dd>نص تجريبي: طريقة الدفع.</dd></div>
+          <div><dt>الاستبدال</dt><dd>نص تجريبي: سياسة الاستبدال.</dd></div>
+        </dl>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- CLOSING: the last thing a visitor meets is an invitation to order. Text is a placeholder. -->
+<section class="closing">
+  <div class="wrap">
+    <svg class="flame" viewBox="0 0 60 96" aria-hidden="true"><defs><linearGradient id="fl" x1="0" y1="1" x2="0" y2="0"><stop offset="0" stop-color="#ff8a2a"/><stop offset=".55" stop-color="#ffc26b"/><stop offset="1" stop-color="#fff3d6"/></linearGradient></defs><path class="f-outer" d="M30 4C38 22 52 36 52 58a22 22 0 0 1-44 0C8 44 18 36 22 22c2 8 6 10 8-18z" fill="url(#fl)"/><path class="f-core" d="M30 40c6 10 12 16 12 26a12 12 0 0 1-24 0c0-8 6-14 12-26z" fill="#fff6e0"/></svg>
+    <h2 class="promise reveal">جاهز تختار شمعتك؟</h2>
+    <p class="reveal">نص تجريبي: اكتب لنا اسم الشمعة التي أعجبتك على واتساب.</p>
+    <p class="reveal reassure">نص تجريبي: مدة الرد المعتادة تُكتب هنا.</p>
+    <a class="btn reveal" href="https://wa.me/0000000000?text=%D9%85%D8%B1%D8%AD%D8%A8%D9%8B%D8%A7%D8%8C%20%D8%A3%D8%B1%D9%8A%D8%AF%20%D8%A3%D9%86%20%D8%A3%D8%B7%D9%84%D8%A8%20%D8%B4%D9%85%D8%B9%D8%A9" target="_blank" rel="noopener">اكتب لنا على واتساب</a>
+  </div>
+</section>
+
+</main>
+
+<footer class="end">نسخة تجريبية · الصور من Unsplash</footer>
+
+<!-- PRODUCT DETAIL: opens when a candle is pressed (page.js fills it from products.json). All facts are TEST text until the client supplies hers. -->
+<div class="detail-scrim" id="detailScrim" hidden></div>
+<aside class="detail" id="detail" role="dialog" aria-modal="true" aria-labelledby="detailName" aria-hidden="true" tabindex="-1">
+  <div class="detail-head"><button type="button" class="detail-close" id="detailClose" aria-label="إغلاق"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <div class="detail-body" id="detailBody"></div>
+  <div class="detail-foot"><a class="btn" id="detailOrder" href="#" target="_blank" rel="noopener">اطلب عبر واتساب</a></div>
+</aside>
+<script src="page.js?v=15" defer></script>
+<script type="module" src="candle.js?v=8"></script>
+</body>
+</html>

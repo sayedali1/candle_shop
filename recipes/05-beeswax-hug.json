@@ -1,0 +1,129 @@
+{
+ "name": "Two hugging beeswax figures",
+ "turn": 0.15,
+ "size": 1.05,
+ "shadow": 1.5,
+ "materials": {
+  "bees": {
+   "kind": "wax",
+   "color": "#c9a05a",
+   "bump": 0.3,
+   "glow": 0.3
+  }
+ },
+ "parts": [
+  {
+   "shape": "capsule",
+   "material": "bees",
+   "r": 0.2,
+   "len": 0.5,
+   "pos": [
+    -0.19,
+    0.45,
+    0
+   ],
+   "rot": [
+    0,
+    0,
+    0.05
+   ]
+  },
+  {
+   "shape": "sphere",
+   "material": "bees",
+   "r": 0.25,
+   "pos": [
+    -0.2,
+    0.86,
+    0
+   ],
+   "scale": [
+    1,
+    0.92,
+    1
+   ]
+  },
+  {
+   "shape": "capsule",
+   "material": "bees",
+   "r": 0.19,
+   "len": 0.38,
+   "pos": [
+    0.2,
+    0.37,
+    0
+   ],
+   "rot": [
+    0,
+    0,
+    -0.04
+   ]
+  },
+  {
+   "shape": "sphere",
+   "material": "bees",
+   "r": 0.23,
+   "pos": [
+    0.21,
+    0.73,
+    0
+   ],
+   "scale": [
+    1,
+    0.92,
+    1
+   ]
+  },
+  {
+   "shape": "capsule",
+   "material": "bees",
+   "r": 0.068,
+   "len": 0.34,
+   "pos": [
+    0.04,
+    0.42,
+    0.18
+   ],
+   "rot": [
+    0,
+    0,
+    1.72
+   ]
+  },
+  {
+   "shape": "capsule",
+   "material": "bees",
+   "r": 0.068,
+   "len": 0.34,
+   "pos": [
+    0.07,
+    0.56,
+    0.17
+   ],
+   "rot": [
+    0,
+    0,
+    1.45
+   ]
+  }
+ ],
+ "wicks": [
+  {
+   "kind": "long",
+   "x": -0.2,
+   "base": 1.08,
+   "tip": 1.2,
+   "radius": 0.01
+  },
+  {
+   "kind": "long",
+   "x": 0.21,
+   "base": 0.94,
+   "tip": 1.06,
+   "radius": 0.01
+  }
+ ],
+ "flame": {
+  "size": 0.75
+ }
+}

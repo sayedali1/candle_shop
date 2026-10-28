@@ -1,0 +1,33 @@
+<!doctype html>
+<html lang="en" dir="ltr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Candle contact sheet</title>
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<style>
+  body{margin:0;background:#120d09;color:#f2e6d2;font:14px system-ui,sans-serif}
+  .bar{display:flex;gap:8px;padding:8px 12px;align-items:center}
+  button,select{font:inherit;color:inherit;background:#241a12;border:1px solid #3a2a1c;border-radius:8px;padding:5px 10px;cursor:pointer}
+  button[aria-pressed=true]{background:#e8a24a;color:#2a1a08}
+  canvas{display:block;width:100%;height:56vh}
+  .photos{display:grid;grid-template-columns:repeat(4,1fr);gap:6px;padding:6px}
+  .photos figure{margin:0;position:relative;height:22vh;background:#0d0906;overflow:hidden}
+  .photos img{width:100%;height:100%;object-fit:cover}
+  .photos figcaption{position:absolute;left:6px;top:4px;font-size:12px;background:rgba(0,0,0,.6);padding:1px 6px;border-radius:6px}
+</style>
+</head>
+<body>
+<div class="bar"><b>Contact sheet</b> <button id="lit" aria-pressed="false">Lit</button>
+ <select id="light"><option value="studio">Studio</option><option value="flame">Flame only</option></select>
+ <span id="msg"></span></div>
+<canvas id="c"></canvas>
+<div class="photos" id="photos"></div>
+<script type="module" src="sheet.js"></script>
+</body>
+</html>

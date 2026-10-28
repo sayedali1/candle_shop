@@ -1,0 +1,144 @@
+{
+ "name": "Straight jar in a flowery wrap, coloured wax, crystals, wooden wick",
+ "turn": -0.1,
+ "size": 1.0,
+ "shadow": 1.7,
+ "materials": {
+  "jar": {
+   "kind": "glass",
+   "opacity": 0.13
+  },
+  "rust": {
+   "kind": "wax",
+   "color": "#a8483a",
+   "sheenColor": "#ffc090"
+  },
+  "wrap": {
+   "kind": "paper",
+   "texture": {
+    "kind": "floral",
+    "base": "#c9776a",
+    "line": "#a8483a",
+    "title": "علامة تجريبية",
+    "sub": "نص تجريبي"
+   },
+   "side": "double"
+  }
+ },
+ "parts": [
+  {
+   "shape": "lathe",
+   "material": "jar",
+   "profile": [
+    [
+     0,
+     0
+    ],
+    [
+     0.44,
+     0
+    ],
+    [
+     0.48,
+     0.02
+    ],
+    [
+     0.5,
+     0.06
+    ],
+    [
+     0.5,
+     0.78
+    ],
+    [
+     0.495,
+     0.8
+    ],
+    [
+     0.46,
+     0.8
+    ],
+    [
+     0.455,
+     0.78
+    ],
+    [
+     0.455,
+     0.1
+    ],
+    [
+     0.43,
+     0.07
+    ],
+    [
+     0,
+     0.07
+    ]
+   ]
+  },
+  {
+   "shape": "lathe",
+   "material": "rust",
+   "profile": [
+    [
+     0,
+     0.075
+    ],
+    [
+     0.446,
+     0.075
+    ],
+    [
+     0.449,
+     0.7
+    ],
+    [
+     0,
+     0.7
+    ]
+   ]
+  },
+  {
+   "shape": "cylinder",
+   "material": "wrap",
+   "r": 0.508,
+   "h": 0.5,
+   "open": true,
+   "segments": 96,
+   "thetaStart": -3.14159265,
+   "thetaLength": 6.2831853,
+   "pos": [
+    0,
+    0.4,
+    0
+   ]
+  },
+  {
+   "shape": "stones",
+   "material": "rust",
+   "colors": [
+    "#6a4fa0",
+    "#8a5a2b",
+    "#3f7a5a",
+    "#e8e6f0",
+    "#2a3550",
+    "#b06a3a"
+   ],
+   "ring": 0.24,
+   "y": 0.73,
+   "size": 0.065
+  }
+ ],
+ "wicks": [
+  {
+   "kind": "wood",
+   "base": 0.7,
+   "tip": 0.9,
+   "width": 0.15
+  }
+ ],
+ "flame": {
+  "size": 0.9,
+  "width": 1.5
+ }
+}
