@@ -529,6 +529,12 @@ One entry per decision, newest at the bottom. The vision table is in `brief/visi
 - Checked: phone-size window loads with no console errors; custom properties now sit on the light layer, the blend mode is normal and the blur is off on phones; the canvas keeps one size. Not checked: a real phone (browser bar behaviour, frame rate, battery, the look without the grain and blend).
 - To confirm: open the page on a phone and scroll up and down slowly; say whether the flashes and stutter are gone, and where they still happen.
 
+### 2026-10-28 - More optimization, phone focus (second round)
+- Measured (phone-size window): at the shelf the page's own work was about 1.3 ms per frame on this computer (the new `cpu per frame` line in the ?perf box); network at load stayed at 510 KB; the shelf candles (20) were built the moment their slot came near the screen, which can stall a phone's scroll.
+- Done: (1) on phones the scene draws 30 frames a second while nothing but the flame moves, and 60 while the visitor scrolls or touches (halves idle battery use; not with reduced motion); (2) if frames stay too slow while scrolling, the phone steps its resolution down by itself (1.5, 1.25, 1, 0.8) with no blank frame; (3) the shelf candles are built ahead of time, one at a time, in idle moments after the hero has started (20 of 20 built a few seconds after load); (4) a shelf far off screen no longer reacts to every page scroll, and the About ember only follows the scroll while About is near the screen; (5) the ?perf box shows `cpu per frame` and the current pixel ratio.
+- Checked: phone-size window, no console errors, 20 of 20 candles built ahead, the readout shows the new lines. Not checked: any of this on a real phone (idle frame rate, automatic resolution steps, battery), whether the 30-frame idle looks different to the eye.
+- Not done: self-hosting Three.js (one fewer connection), `content-visibility` on off-screen sections, smaller photos for phones.
+
 ## Skill gaps found while testing (for the stage 11 review)
 - A stand-in that changes the concept (photos instead of 3D) must be flagged before it is built, not discovered by the user afterwards.
 - A preview that only runs animation frames while a screenshot is taken makes frame-driven features look broken. Test them by flushing frames (act, screenshot, then read), and say so in the log.

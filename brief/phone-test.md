@@ -19,6 +19,11 @@
 | 7 | Leave it open for 3 minutes | The phone does not get hot; battery drops only a little | battery % before and after, warm or not |
 | 8 | Turn the phone sideways and back | Layout redraws, no blank canvas | anything broken |
 
+## New in the green box
+- `cpu per frame`: the page's own work for one frame. Under about 8 ms is fine on a phone; over 16 ms means it cannot hold 60 frames.
+- `pixel ratio`: if it steps down by itself while you scroll (1.5, then 1.25, 1, 0.8), the phone was too slow at full sharpness. Note the value you see.
+- While you leave the phone untouched the page draws 30 frames a second on purpose (to save battery), so fps in the green box shows about 30 when idle and about 60 while scrolling.
+
 ## Numbers to send back
 - Phone model and browser
 - fps in the hero / About / shelf (30 or more is fine; under 20 is a problem)

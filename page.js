@@ -150,7 +150,7 @@ function setupShelf(shelf) {
   ['wheel', 'pointerdown', 'touchstart'].forEach(ev => shelf.addEventListener(ev, () => { forced = -1; }, { passive: true }));   // the visitor takes over: the lit candle follows the scroll again
   shelf.classList.add('js');
   shelf.addEventListener('scroll', queue, { passive: true });
-  addEventListener('scroll', queue, { passive: true });
+  addEventListener('scroll', () => { if (onScreen) queue(); }, { passive: true });           // a shelf far off screen has nothing to update
   addEventListener('resize', queue);
   new IntersectionObserver(([e]) => { onScreen = e.isIntersecting; if (onScreen) visibleShelves.add(shelf); else visibleShelves.delete(shelf); if (pickBar) pickBar.classList.toggle('show', visibleShelves.size > 0); queue(); }, { threshold: 0.35 }).observe(shelf);
   items.forEach((el, k) => el.addEventListener('click', e => { if (k !== active && !e.target.closest('a')) go(k); }));
@@ -261,7 +261,9 @@ if (steps) {
     steps.style.setProperty('--p', Math.min(Math.max((mark - r.top) / r.height, 0), 1).toFixed(3));
     lis.forEach(li => { const b = li.getBoundingClientRect(); li.classList.toggle('lit', b.top + b.height * 0.3 < mark); });
   };
-  addEventListener('scroll', place, { passive: true }); addEventListener('resize', place); place();
+  let stepsOn = true;
+  new IntersectionObserver(([e]) => { stepsOn = e.isIntersecting; if (stepsOn) place(); }, { rootMargin: '200px' }).observe(steps);
+  addEventListener('scroll', () => { if (stepsOn) place(); }, { passive: true }); addEventListener('resize', place); place();
 }
 
 /* HEADER: only one filled order button on screen at a time. The header one steps aside while the hero button, the shelf or the closing button is visible. */

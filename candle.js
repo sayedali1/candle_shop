@@ -56,7 +56,7 @@ async function start() {
 
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
-  const pixelRatio = Math.min(devicePixelRatio || 1, lite ? 1.5 : 2);
+  let pixelRatio = Math.min(devicePixelRatio || 1, lite ? 1.5 : 2);      // (a phone may step it down while scrolling, see the frame loop)
   renderer.setPixelRatio(pixelRatio);
   renderer.shadowMap.enabled = !lite;                              // real soft shadows on desktop; phones keep the cheap painted contact shadow
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -547,8 +547,9 @@ async function start() {
 calls ${i.render.calls}   triangles ${i.render.triangles}
 textures ${i.memory.textures}   geometries ${i.memory.geometries}
 lite ${lite}   pixel ratio ${pixelRatio}   canvas ${renderer.domElement.width}x${renderer.domElement.height}
+cpu per frame ${jsN ? (jsSum / jsN).toFixed(1) : '-'} ms
 shelf candles built ${shelfCandles.filter(Boolean).length} of ${shelfItems.length}`;
-      n = 0; t0 = now; worst = 0;
+      n = 0; t0 = now; worst = 0; jsSum = 0; jsN = 0;
     };
   }
   const clock = new THREE.Clock();
@@ -556,8 +557,19 @@ shelf candles built ${shelfCandles.filter(Boolean).length} of ${shelfItems.lengt
   let cur = 0, burn = 0, side = 0;                                // smoothed: the hero turn, the burn-down, the slide to the side
   let shelfDrawn = false;                                         // true while the shelf candles were in the last drawn picture
   let igniteAt = null;                                            // when the flame starts to light (a moment after the first frame)
+  /* phones: draw 30 frames a second while only the flame moves (60 while the visitor scrolls or touches), and step the resolution down if frames take too long */
+  let lastActive = performance.now(), idleTick = 0, lastExec = 0, ema = 16, slow = 0, step = 0, applyRatio = false, jsSum = 0, jsN = 0;
+  const RATIOS = lite ? [pixelRatio, 1.25, 1, 0.8].filter((r, i, a) => i === 0 || r < a[i - 1]) : [pixelRatio];
+  const wake = () => { lastActive = performance.now(); };
+  ['scroll', 'touchstart', 'touchmove', 'pointerdown', 'keydown', 'wheel', 'resize'].forEach(ev => addEventListener(ev, wake, { passive: true, capture: true }));
   function frame() {
     requestAnimationFrame(frame);
+    const frameStart = performance.now(), idleFor = frameStart - lastActive;
+    if (lite && !reduce && idleFor > 600 && (idleTick++ & 1)) return;
+    if (applyRatio) {                                             // a lower resolution is applied here, right before drawing, so there is no blank frame
+      applyRatio = false; renderer.setPixelRatio(pixelRatio); renderer.setSize(lastW, lastH, false);
+      dustMat.uniforms.uPx.value = pixelRatio; if (composer) composer.setPixelRatio(pixelRatio);
+    }
     const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime;
     const y = scrollY, vh = lastH || innerHeight;                  // a steady height for every scroll position, so the scene does not jitter when the browser bar moves
 
@@ -682,11 +694,27 @@ shelf candles built ${shelfCandles.filter(Boolean).length} of ${shelfItems.lengt
     canvas.style.opacity = lerp(lerp(1, wide ? 0.95 : 0.55, side), 1, rest).toFixed(3);
 
     if (composer) composer.render(); else renderer.render(scene, camera);
+    jsSum += performance.now() - frameStart; jsN++;
+    if (lite && lastExec && idleFor < 400) {                      // while the visitor scrolls: too many slow frames in a row means too many pixels
+      ema = ema * 0.9 + (frameStart - lastExec) * 0.1;
+      slow = ema > 28 ? slow + 1 : 0;
+      if (slow > 40 && step < RATIOS.length - 1) { step++; slow = 0; ema = 16; pixelRatio = RATIOS[step]; applyRatio = true; }
+    }
+    lastExec = frameStart;
     if (perf) perf();
     if (stage.classList.contains('no3d')) { stage.classList.remove('no3d'); document.documentElement.classList.remove('no3d'); }   // 3D started after the timeout: use it
     if (recipes.length) shelfEls.forEach(s => s.classList.add('is3d'));                   // the shelf candles are drawn: the stand-in photos step aside
     stage.classList.add('ready'); bg.classList.add('ready');       // fades the scene in after the first drawn frame
   }
+  /* the shelf candles are built ahead of time, one at a time while the phone is idle, so scrolling to a new candle does not stall */
+  const idle = window.requestIdleCallback ? fn => requestIdleCallback(fn) : fn => setTimeout(fn, 250);
+  const warm = () => {
+    const i = recipes.length ? shelfCandles.findIndex(c => !c) : -1;
+    if (i < 0) return;
+    shelfCandles[i] = makeShelfCandle(shelfItems[i], i);
+    idle(warm);
+  };
+  setTimeout(() => idle(warm), 1500);                             // after the hero has started
   frame();
 }
 
