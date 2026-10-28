@@ -21,6 +21,7 @@ setTimeout(() => {
    the middle is "lit": bright and lifted, with its name and order button. Without JavaScript (or without the data) the one static
    shelf of the page is used, and every item simply shows its own text and button. */
 const root = document.querySelector('.candle-light').style;           // the shelf's own light is set on the light layer only (not on the root: that would restyle the whole page)
+const smooth = matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth';   // visitors who asked for less motion get a jump, not a glide
 const arDigits = n => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 /* The stand-in photos of the shelves (about 1 MB) are only needed when 3D cannot run, so they are not downloaded until then. */
@@ -145,7 +146,7 @@ function setupShelf(shelf) {
   const queue = () => { if (!ticking) { ticking = true; requestAnimationFrame(update); } };
   const go = k => {
     k = Math.max(0, Math.min(items.length - 1, k)); forced = k; queue();
-    items[k].scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+    items[k].scrollIntoView({ behavior: smooth, inline: 'center', block: 'nearest' });
   };
   ['wheel', 'pointerdown', 'touchstart'].forEach(ev => shelf.addEventListener(ev, () => { forced = -1; }, { passive: true }));   // the visitor takes over: the lit candle follows the scroll again
   shelf.classList.add('js');
@@ -227,7 +228,7 @@ window.shelvesReady = (async () => {
     current = k; render(k); opener = document.activeElement;
     if (matchMedia('(max-width: 860px)').matches) {                  // on a phone the sheet covers the lower part: lift the lit candle above it
       const r = items[k].querySelector('.img').getBoundingClientRect();
-      scrollBy({ top: r.bottom - 0.4 * innerHeight, behavior: 'smooth' });
+      scrollBy({ top: r.bottom - 0.4 * innerHeight, behavior: smooth });
     }
     scrim.hidden = false; panel.setAttribute('aria-hidden', 'false'); setInert(true);
     requestAnimationFrame(() => { scrim.classList.add('open'); panel.classList.add('open'); panel.focus({ preventScroll: true }); });

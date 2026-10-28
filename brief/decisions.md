@@ -569,3 +569,10 @@ One entry per decision, newest at the bottom. The vision table is in `brief/visi
 - What the client delayed:
 - To make reusable:
 - Price vs effort:
+
+## 2026-10-29 — audit fixes (five P2s)
+- Every shelf/hero `<img>` now has a 1-pixel placeholder `src` (the real photo still waits in `data-src` until the 3D fails), so the HTML is valid.
+- Large text (200%): the order bar wraps its buttons under the name; the maker rows use `minmax(0, …)` columns and break long words.
+- Added an inline SVG flame favicon, `og:` title/description/locale and a longer description. Still missing: a share image (needs the real domain, so it waits for the deploy).
+- `.shelf` has `overscroll-behavior-x: contain`, so swiping at the end of a row does not trigger the browser's back gesture. Arrows are 44 px on phones.
+- Reduced motion: animations are off, but colour/fade feedback stays; arrow and phone-sheet scrolling jump instead of glide.

@@ -54,7 +54,7 @@ h2{font-size:clamp(1.9rem,5.5vw,3.4rem);font-weight:700;line-height:1.2}
 
 .end{padding:3rem var(--gutter) calc(3rem + env(safe-area-inset-bottom));text-align:center;color:var(--muted);font-size:.9rem}
 
-@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition-property:color,background-color,border-color,opacity,box-shadow!important}}   /* nothing moves; colour and fade feedback stays */
 
 /* ABOUT: promise line and the steps timeline. Text is placeholder until the client supplies facts. */
 .wrap{width:min(1000px,100% - var(--gutter)*2);margin-inline:auto}
@@ -114,7 +114,7 @@ h2{font-size:clamp(1.9rem,5.5vw,3.4rem);font-weight:700;line-height:1.2}
 /* ---------- PRODUCTS: a shelf you walk along (no cards) ---------- */
 .products{padding:clamp(4rem,10vw,8rem) 0}
 .shelf-hint{text-align:center;color:var(--muted);margin-top:-.2rem}
-.shelf{--w:clamp(210px,64vw,300px);overflow-x:auto;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin-top:clamp(1.5rem,4vw,2.5rem);padding:2.4rem 0 1rem;outline-offset:-6px}
+.shelf{--w:clamp(210px,64vw,300px);overflow-x:auto;overscroll-behavior-x:contain;scroll-snap-type:x mandatory;scrollbar-width:none;-webkit-overflow-scrolling:touch;margin-top:clamp(1.5rem,4vw,2.5rem);padding:2.4rem 0 1rem;outline-offset:-6px}
 .shelf::-webkit-scrollbar{display:none}
 .shelf-row{display:flex;gap:clamp(1rem,3vw,2.2rem);width:max-content;padding-inline:calc(50vw - var(--w) / 2)}   /* so the first and the last candle can both reach the middle */
 .shelf-item{flex:none;width:var(--w);scroll-snap-align:center;display:flex;flex-direction:column;align-items:center;gap:.9rem;cursor:pointer}
@@ -353,7 +353,7 @@ h1,h2,h3,.brand,.promise{font-family:'Amiri','Cairo',serif;font-weight:700}
 .maker-photo{width:clamp(96px,22vw,150px);aspect-ratio:1;border-radius:50%;border:2px dashed rgba(232,161,74,.5);display:grid;place-items:center;text-align:center;padding:.5rem}
 .maker-grid p{color:var(--muted);margin-bottom:1rem}
 .promises{display:grid}
-.promises div{display:grid;grid-template-columns:6.5rem 1fr;gap:1rem;border-top:1px solid rgba(245,233,214,.12);padding:.85rem 0}
+.promises div{display:grid;grid-template-columns:minmax(0,6.5rem) minmax(0,1fr);overflow-wrap:anywhere;gap:1rem;border-top:1px solid rgba(245,233,214,.12);padding:.85rem 0}
 .promises div:last-child{border-bottom:1px solid rgba(245,233,214,.12)}
 .promises dt{color:var(--amber);font-weight:700}
 .promises dd{margin:0;color:var(--muted)}
@@ -372,10 +372,11 @@ h1,h2,h3,.brand,.promise{font-family:'Amiri','Cairo',serif;font-weight:700}
 .collection .shelf-item.is-active .shelf-tag{opacity:1;color:var(--text)}
 .collection .shelf-item.is-focus .shelf-tag{color:var(--amber);font-weight:700}
 .pick{position:sticky;bottom:.8rem;z-index:6;display:flex;align-items:center;justify-content:space-between;gap:1rem;width:min(600px,100% - 1.6rem);margin:1.4rem auto 0;padding:.65rem .9rem .65rem 1rem;border-radius:20px;background:rgba(18,12,8,.9);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);border:1px solid rgba(245,233,214,.16);box-shadow:0 10px 30px rgba(0,0,0,.45)}
-.pick-info{min-width:0}
+.pick{flex-wrap:wrap}                                                  /* large text: the buttons drop under the name instead of leaving the screen */
+.pick-info{min-width:0;flex:1 1 11rem}
 .pick-name{font-size:1.15rem;line-height:1.25;margin:0}
 .pick-facts{color:var(--muted);font-size:.82rem;margin:0}
-.pick-actions{display:flex;align-items:center;gap:.3rem;flex:none}
+.pick-actions{display:flex;flex-wrap:wrap;align-items:center;gap:.3rem;flex:none;max-width:100%}
 .pick .detail-open{display:inline-block;padding:.4rem .6rem}
 @media (max-width:520px){.pick{gap:.5rem;padding:.55rem .7rem}.pick .btn-small{padding:.5rem .85rem}}
 
@@ -388,7 +389,7 @@ h1,h2,h3,.brand,.promise{font-family:'Amiri','Cairo',serif;font-weight:700}
 .shelf-arrow.prev{inset-inline-start:clamp(.4rem,1.5vw,1.2rem)}
 .shelf-arrow.next{inset-inline-end:clamp(.4rem,1.5vw,1.2rem)}
 .shelf-arrow[aria-disabled="true"]{opacity:.22;pointer-events:none}
-@media (max-width:640px){.shelf-arrow{width:40px;height:40px}}
+@media (max-width:640px){.shelf-arrow{width:44px;height:44px}}
 
 /* the shelves scroll inside themselves: nothing of them may widen the page (it used to slide sideways and leave the right side empty) */
 .products{overflow-x:clip}
