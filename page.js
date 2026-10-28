@@ -20,7 +20,7 @@ setTimeout(() => {
 /* PRODUCTS: shelves you walk along, one shelf for each collection (products.json "collections"). On every shelf the candle nearest
    the middle is "lit": bright and lifted, with its name and order button. Without JavaScript (or without the data) the one static
    shelf of the page is used, and every item simply shows its own text and button. */
-const root = document.documentElement.style;
+const root = document.querySelector('.candle-light').style;           // the shelf's own light is set on the light layer only (not on the root: that would restyle the whole page)
 const arDigits = n => String(n).replace(/\d/g, d => '٠١٢٣٤٥٦٧٨٩'[d]);
 const esc = s => String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 /* The stand-in photos of the shelves (about 1 MB) are only needed when 3D cannot run, so they are not downloaded until then. */

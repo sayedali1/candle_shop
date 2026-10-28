@@ -16,6 +16,7 @@ let shelfEls = [], shelfItems = [], shelfOf = [];                    // every sh
 const copyA = document.getElementById('copyA');
 const copyB = document.getElementById('copyB');
 const cue = document.getElementById('cue');
+const lightEl = document.querySelector('.candle-light');
 /* reduced motion: no smoothing, no flicker. Adding ?still to the address does the same, which is handy for checking an exact scroll position. */
 const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches || location.search.includes('still');
 const lite = matchMedia('(max-width: 860px), (pointer: coarse)').matches;
@@ -448,7 +449,7 @@ async function start() {
 
   /* places every candle over its slot, and the flame on the lit one. Returns where the flame is on screen, for the room's light. */
   function layoutShelf(t, flick, k) {
-    const vw = innerWidth, vh = innerHeight;
+    const vw = lastW || innerWidth, vh = lastH || innerHeight;     // the canvas size, which stays constant (the window's height changes with the browser bar)
     const ppu = vh / (2 * Math.tan(Math.PI / 12) * SHELF_D);       // pixels per world unit at the shelf's distance (the field of view is 30 degrees)
     /* every shelf lights its own centred candle, but there is only one flame: it belongs to the shelf nearest the middle of the screen */
     const sRects = shelfEls.map(s => s.getBoundingClientRect());
@@ -508,10 +509,13 @@ async function start() {
     productsBottom = productsEl ? productsEl.getBoundingClientRect().bottom + scrollY : Infinity;
     aboutTop = aboutEl ? aboutEl.getBoundingClientRect().top + scrollY : Infinity;              // where About starts: the candle burns down behind it
   };
+  let lastW = 0, lastH = 0;                                        // the canvas is as tall as the LARGEST window (100lvh in the CSS), so the phone's browser bar sliding in and out never resizes it
   function resize() {
     readLayout();
     const w = canvas.clientWidth, h = canvas.clientHeight;
     if (!w || !h) return;                                         // the page is not laid out yet (or the window is hidden): wait for the next resize
+    if (w === lastW && h === lastH) return;                       // same size: nothing to do (setSize would clear the picture and make it flash)
+    lastW = w; lastH = h;
     renderer.setSize(w, h, false);
     if (composer) { composer.setPixelRatio(pixelRatio); composer.setSize(w, h); }
     aspect = w / h; frameNo = 0;                                  // resizing clears the canvas: draw again
@@ -555,7 +559,7 @@ shelf candles built ${shelfCandles.filter(Boolean).length} of ${shelfItems.lengt
   function frame() {
     requestAnimationFrame(frame);
     const dt = Math.min(clock.getDelta(), 0.05), t = clock.elapsedTime;
-    const y = scrollY, vh = innerHeight;
+    const y = scrollY, vh = lastH || innerHeight;                  // a steady height for every scroll position, so the scene does not jitter when the browser bar moves
 
     /* once the products section has arrived the candle has faded out: stop drawing to save battery */
     const rest = isFinite(productsTop) ? band(y, productsTop - 0.45 * vh, productsTop + 0.05 * vh) : 0;   // 0..1: the products have arrived and the shelf takes over
@@ -664,10 +668,10 @@ shelf candles built ${shelfCandles.filter(Boolean).length} of ${shelfItems.lengt
     const sh = nearShelf ? layoutShelf(t, flick, reduce ? 1 : k) : hideShelf();   // on the shelf the light follows the lit candle
     camera.updateMatrixWorld();
     flameTop.set(cx, cy + (wickTop + 0.1) * cs, 0).project(camera);
-    const root = document.documentElement.style;
+    const root = lightEl.style;                                     // only the light layer restyles, not the whole page
     const onShelf = sh.amt > 0.01;
-    root.setProperty('--lx', (onShelf ? sh.x : (flameTop.x * 0.5 + 0.5) * innerWidth).toFixed(0) + 'px');
-    root.setProperty('--ly', (onShelf ? sh.y : (-flameTop.y * 0.5 + 0.5) * innerHeight).toFixed(0) + 'px');
+    root.setProperty('--lx', (onShelf ? sh.x : (flameTop.x * 0.5 + 0.5) * lastW).toFixed(0) + 'px');
+    root.setProperty('--ly', (onShelf ? sh.y : (-flameTop.y * 0.5 + 0.5) * lastH).toFixed(0) + 'px');
     root.setProperty('--li', Math.max(0, (onShelf ? sh.amt : litAll) * (0.85 + flick * 2.2)).toFixed(3));
 
     copyA.style.opacity = (1 - band(cur, 0.22, 0.42)).toFixed(3);

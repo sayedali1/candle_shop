@@ -520,6 +520,15 @@ One entry per decision, newest at the bottom. The vision table is in `brief/visi
 - Checked: desktop-size windows (900x600 and 1240x780) and a phone-size window render with no console errors; the pool of light, shadows and rim show. NOT checked closely: the finer material details (the test screenshots are only 411 px wide, too small to judge them), real frame rate with the shadow pass on a laptop, the phone look on a real device.
 - Not done: flame and glow, scene and camera, the same upgrades for the shelf candles.
 
+### 2026-10-28 - Phone render felt glitchy: causes found in the code and fixed (not yet confirmed on a real phone)
+- The user said the phone render feels like a glitch. Reading the code found four likely causes (the test window cannot reproduce a phone's browser bar, so these are from the code, not from watching a phone):
+  1. The 3D canvas filled the current window (inset 0), and a phone's window height changes as the browser bar slides in and out while scrolling; every change resized the canvas, which clears the picture for a frame (a flash) and moved the scroll-driven scene. Fixed: the canvas is as tall as the largest window (100lvh) and keeps one size; a resize to the same size is ignored; the scene uses that steady height for its scroll maths and for placing the shelf candles and the glow.
+  2. Every frame the scene wrote three custom properties on the page's root element, which restyles the whole page 60 times a second. Fixed: they are written on the light layer only (also the shelf's own light variables).
+  3. A full-screen blended layer (screen) and a grain overlay (overlay) sat over the live canvas. Fixed on phones: plain warm veil instead of a blend, no grain overlay.
+  4. Blurred panels (order bar, FAQ panel, detail sheet and its dimmer) blurred a live canvas behind them. Fixed on phones: no blur, a more solid background.
+- Checked: phone-size window loads with no console errors; custom properties now sit on the light layer, the blend mode is normal and the blur is off on phones; the canvas keeps one size. Not checked: a real phone (browser bar behaviour, frame rate, battery, the look without the grain and blend).
+- To confirm: open the page on a phone and scroll up and down slowly; say whether the flashes and stutter are gone, and where they still happen.
+
 ## Skill gaps found while testing (for the stage 11 review)
 - A stand-in that changes the concept (photos instead of 3D) must be flagged before it is built, not discovered by the user afterwards.
 - A preview that only runs animation frames while a screenshot is taken makes frame-driven features look broken. Test them by flushing frames (act, screenshot, then read), and say so in the log.
