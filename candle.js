@@ -539,14 +539,14 @@ async function start() {
     const el = document.createElement('pre');
     el.style.cssText = 'position:fixed;z-index:99;top:4.2rem;left:.5rem;margin:0;padding:.4rem .6rem;font:12px/1.4 ui-monospace,monospace;color:#9f9;background:rgba(0,0,0,.72);border-radius:6px;pointer-events:none;direction:ltr;white-space:pre';
     document.body.append(el);
-    let n = 0, t0 = performance.now(), last = t0, worst = 0, firstFrame = 0, early = 0, earlyN = 0;
+    let n = 0, t0 = performance.now(), last = t0, worst = 0, firstFrame = 0, early = 0, earlyAt = 0, earlyN = 0;
     perf = () => {
       const now = performance.now(); worst = Math.max(worst, now - last);
-      if (!firstFrame) firstFrame = now; else if (now < 8000) { early = Math.max(early, now - last); earlyN++; }   // the first 8 seconds after the page opened: where the load lag lives
+      if (!firstFrame) firstFrame = now; else if (now < 8000) { if (now - last > early) { early = now - last; earlyAt = now; } earlyN++; }   // the first 8 seconds after the page opened: where the load lag lives
       last = now; n++;
       if (now - t0 < 1000) return;
       const i = renderer.info;
-      el.textContent = `LOAD first frame ${Math.round(firstFrame)} ms   worst in first 8 s ${Math.round(early)} ms   frames in 8 s ${earlyN}
+      el.textContent = `LOAD first ${Math.round(firstFrame)}  worst ${Math.round(early)} ms at ${Math.round(earlyAt)}  n ${earlyN}
 fps ${Math.round(n * 1000 / (now - t0))}   slowest frame ${Math.round(worst)} ms
 calls ${i.render.calls}   triangles ${i.render.triangles}
 textures ${i.memory.textures}   geometries ${i.memory.geometries}
@@ -733,7 +733,7 @@ shelf candles built ${shelfCandles.filter(Boolean).length} of ${shelfItems.lengt
     prepare(c);
     setTimeout(() => idle(warm), 150);
   };
-  setTimeout(() => idle(warm), 1500);                             // after the hero has started
+  if (qs.get('w') !== '0') setTimeout(() => idle(warm), 1500);    // after the hero has started (?w=0 turns the pre-build off, for measuring)
   if (qs.get('b') === '1') {                                      // experiment: compile the hero's materials in parallel and send its textures BEFORE the first frame, so that frame is not the one that freezes
     scene.traverse(o => [].concat(o.material || []).forEach(m => { for (const k in m) { const v = m[k]; if (v && v.isTexture) renderer.initTexture(v); } }));
     await Promise.race([renderer.compileAsync(scene, camera).catch(() => {}), new Promise(r => setTimeout(r, 2500))]);
