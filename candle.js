@@ -708,11 +708,26 @@ shelf candles built ${shelfCandles.filter(Boolean).length} of ${shelfItems.lengt
   }
   /* the shelf candles are built ahead of time, one at a time while the phone is idle, so scrolling to a new candle does not stall */
   const idle = window.requestIdleCallback ? fn => requestIdleCallback(fn) : fn => setTimeout(fn, 250);
+  /* A new candle is slow to show for the first time not because of building it but because the graphics chip has to compile its materials and
+     receive its textures. Both are done here, ahead of time, for one candle per quiet moment (never while the visitor is scrolling). */
+  const prepare = c => {
+    const seen = new Set();
+    c.g.traverse(o => {
+      [].concat(o.material || []).forEach(m => {
+        for (const k in m) { const v = m[k]; if (v && v.isTexture && !seen.has(v)) { seen.add(v); renderer.initTexture(v); } }
+      });
+    });
+    c.g.visible = true; shelfGroup.visible = true;                // the compile only looks at what is visible
+    renderer.compileAsync(c.g, camera, scene).catch(() => {});
+    c.g.visible = false;
+  };
   const warm = () => {
+    if (performance.now() - lastActive < 400) return setTimeout(() => idle(warm), 400);   // the visitor is moving: wait
     const i = recipes.length ? shelfCandles.findIndex(c => !c) : -1;
     if (i < 0) return;
-    shelfCandles[i] = makeShelfCandle(shelfItems[i], i);
-    idle(warm);
+    const c = shelfCandles[i] = makeShelfCandle(shelfItems[i], i);
+    prepare(c);
+    setTimeout(() => idle(warm), 150);
   };
   setTimeout(() => idle(warm), 1500);                             // after the hero has started
   frame();

@@ -576,3 +576,7 @@ One entry per decision, newest at the bottom. The vision table is in `brief/visi
 - Added an inline SVG flame favicon, `og:` title/description/locale and a longer description. Still missing: a share image (needs the real domain, so it waits for the deploy).
 - `.shelf` has `overscroll-behavior-x: contain`, so swiping at the end of a row does not trigger the browser's back gesture. Arrows are 44 px on phones.
 - Reduced motion: animations are off, but colour/fade feedback stays; arrow and phone-sheet scrolling jump instead of glide.
+
+## 2026-10-29 — less lag when candles first appear
+- Measured: building a candle is cheap (first ~17 ms, then ~1 ms on a laptop). The stall on a phone is the graphics chip compiling each material and receiving textures the first time a candle is drawn.
+- The idle pre-build now also compiles the materials (`compileAsync`) and uploads the textures (`initTexture`) of each candle ahead of time, one candle per quiet moment, and waits while the visitor is scrolling or touching.
