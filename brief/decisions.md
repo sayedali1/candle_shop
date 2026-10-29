@@ -591,3 +591,5 @@ One entry per decision, newest at the bottom. The vision table is in `brief/visi
 - A pinned copy of Three.js 0.160.0 (and the 5 effect files the desktop bloom needs, with their 5 helper files) now lives in `vendor/three/`, and the import map in `index.html`, `lab.html` and `sheet.html` points there (`./vendor/...`). No request goes to jsDelivr any more.
 - `vercel.json` sets caching: `vendor/` for a year (the version is pinned; a new version would get a new path), `assets/` for a day, `.js/.css/.json` for 5 minutes with background refresh.
 - Before (real phone, BrowserStack Galaxy M32): first frame 3.6-3.9 s. After: to be measured once deployed.
+- Measured on the real phone (Galaxy M32): first visit first frame 3.37 s (about the same as before, 3.3-3.9 s); RETURN visit first frame 0.97 s with a worst early frame of 80 ms.
+- The first deploy showed `vendor/` served with the 5-minute rule: in `vercel.json` the later generic `.js` rule overrode the `vendor/` one. Reordered so `vendor/` comes last and wins.
