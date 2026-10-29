@@ -56,7 +56,8 @@ async function start() {
 
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
-  let pixelRatio = Math.min(devicePixelRatio || 1, lite ? 1.5 : 2);      // (a phone may step it down while scrolling, see the frame loop)
+  const qs = new URLSearchParams(location.search);                 // ?r=1.25 and ?b=1 switch the two phone load experiments on, for measuring on a real phone
+  let pixelRatio = Math.min(devicePixelRatio || 1, +qs.get('r') || (lite ? 1.5 : 2));      // (a phone may step it down while scrolling, see the frame loop)
   renderer.setPixelRatio(pixelRatio);
   renderer.shadowMap.enabled = !lite;                              // real soft shadows on desktop; phones keep the cheap painted contact shadow
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -538,12 +539,15 @@ async function start() {
     const el = document.createElement('pre');
     el.style.cssText = 'position:fixed;z-index:99;top:4.2rem;left:.5rem;margin:0;padding:.4rem .6rem;font:12px/1.4 ui-monospace,monospace;color:#9f9;background:rgba(0,0,0,.72);border-radius:6px;pointer-events:none;direction:ltr;white-space:pre';
     document.body.append(el);
-    let n = 0, t0 = performance.now(), last = t0, worst = 0;
+    let n = 0, t0 = performance.now(), last = t0, worst = 0, firstFrame = 0, early = 0, earlyN = 0;
     perf = () => {
-      const now = performance.now(); worst = Math.max(worst, now - last); last = now; n++;
+      const now = performance.now(); worst = Math.max(worst, now - last);
+      if (!firstFrame) firstFrame = now; else if (now < 8000) { early = Math.max(early, now - last); earlyN++; }   // the first 8 seconds after the page opened: where the load lag lives
+      last = now; n++;
       if (now - t0 < 1000) return;
       const i = renderer.info;
-      el.textContent = `fps ${Math.round(n * 1000 / (now - t0))}   slowest frame ${Math.round(worst)} ms
+      el.textContent = `LOAD first frame ${Math.round(firstFrame)} ms   worst in first 8 s ${Math.round(early)} ms   frames in 8 s ${earlyN}
+fps ${Math.round(n * 1000 / (now - t0))}   slowest frame ${Math.round(worst)} ms
 calls ${i.render.calls}   triangles ${i.render.triangles}
 textures ${i.memory.textures}   geometries ${i.memory.geometries}
 lite ${lite}   pixel ratio ${pixelRatio}   canvas ${renderer.domElement.width}x${renderer.domElement.height}
@@ -730,6 +734,10 @@ shelf candles built ${shelfCandles.filter(Boolean).length} of ${shelfItems.lengt
     setTimeout(() => idle(warm), 150);
   };
   setTimeout(() => idle(warm), 1500);                             // after the hero has started
+  if (qs.get('b') === '1') {                                      // experiment: compile the hero's materials in parallel and send its textures BEFORE the first frame, so that frame is not the one that freezes
+    scene.traverse(o => [].concat(o.material || []).forEach(m => { for (const k in m) { const v = m[k]; if (v && v.isTexture) renderer.initTexture(v); } }));
+    await Promise.race([renderer.compileAsync(scene, camera).catch(() => {}), new Promise(r => setTimeout(r, 2500))]);
+  }
   frame();
 }
 
