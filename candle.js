@@ -427,13 +427,31 @@ async function start() {
   shelfEls = [...document.querySelectorAll('.shelf')];
   shelfItems = []; shelfOf = [];
   shelfEls.forEach((s, si) => s.querySelectorAll('.shelf-item').forEach(it => { shelfItems.push(it); shelfOf.push(si); }));
+  /* ---------- phones: every shelf candle is drawn INTO its own slot ----------
+     A fixed canvas that is redrawn after every scroll step is always a frame or two behind the page, which scrolls on its own fast thread:
+     on a weak phone the candles trail and jump. So on phones each candle gets a small canvas INSIDE its slot, which the phone scrolls together
+     with the page, in both directions. A candle is drawn again only when it changes (lit or not, the flame); a second, hidden renderer does the
+     drawing and the result is copied into the slot. ?slots=0 goes back to the single fixed canvas, for comparing. */
+  let slotsOn = lite && qs.get('slots') !== '0', sr = null, sScene = null, sCam = null;
+  if (slotsOn) {
+    try {
+      sr = new THREE.WebGLRenderer({ antialias: true, alpha: true, premultipliedAlpha: true, powerPreference: 'high-performance' });
+      sr.toneMapping = THREE.ACESFilmicToneMapping; sr.toneMappingExposure = 1.05; sr.setPixelRatio(1);
+      sScene = new THREE.Scene();
+      sScene.environment = new THREE.PMREMGenerator(sr).fromScene(studio, 0.02).texture;
+      sScene.add(new THREE.HemisphereLight(0x6a5a4a, 0x120c08, 0.3));
+      sCam = new THREE.PerspectiveCamera(30, 1, 0.1, 50); sCam.position.set(0, 0, SHELF_D);
+    } catch (e) { console.warn('slot drawing off:', e); slotsOn = false; sr = null; }
+  }
+  const slotRatio = Math.min(devicePixelRatio || 1, 1.5);
+
   /* a shop can have many candles, so each 3D candle is built only when its slot first comes near the screen */
   const shelfCandles = new Array(shelfItems.length).fill(null);
   const makeShelfCandle = (item, i) => {
     const c = builder.build(recipes[i % recipes.length]);
     c.g = c.group; c.el = item.querySelector('.img'); c.lit = 0;    // the slot is the picture box of the item
-    c.vx = c.vy = 0; c.t = 0; c.pl = c.pb = 0;                      // how fast the slot is moving on screen (see "lead" in layoutShelf)
-    c.g.visible = false; shelfGroup.add(c.g);
+    c.g.visible = false; (slotsOn ? sScene : shelfGroup).add(c.g);
+    c.swayAmt = 0; c.dLit = 0; c.dSway = 0; c.hadFlame = false; c.dirty = true;   // what was last drawn into the slot
     return c;
   };
 
@@ -445,18 +463,91 @@ async function start() {
   const shelfLight = new THREE.PointLight(0xffa447, 0, 8, 2);
   const shelfFire = [sHalo, sFlame, sCore, sGlow, sEmber];
   shelfFire.forEach(m => { m.visible = false; });
-  shelfGroup.add(...shelfFire, shelfLight);
+  (slotsOn ? sScene : shelfGroup).add(...shelfFire, shelfLight);
   let flameAt = 0, flameAmt = 0;                                  // which candle holds the flame, and how strongly it burns
   const hideShelf = () => { shelfGroup.visible = false; return { amt: 0, x: 0, y: 0 }; };
 
+  /* the slot's own canvas: bigger than the slot, so the flame's glow has room (it is only a picture; taps pass through to the slot) */
+  const SLOT_PAD = { x: 0.3, top: 0.4, bottom: 0.14 };               // fractions of the slot's size
+  const ensureCanvas = c => {
+    const w = c.el.offsetWidth, h = c.el.offsetHeight;
+    if (!w || !h) return false;
+    if (c.cv && c.cw === w && c.ch === h) return true;
+    c.cw = w; c.ch = h;
+    const px = Math.round(w * SLOT_PAD.x), pt = Math.round(h * SLOT_PAD.top), pb = Math.round(h * SLOT_PAD.bottom);
+    c.pad = [px, pt, pb];
+    if (!c.cv) { c.cv = document.createElement('canvas'); c.cv.className = 'slot3d'; c.cv.setAttribute('aria-hidden', 'true'); c.el.append(c.cv); c.ctx = c.cv.getContext('2d'); }
+    const cssW = w + 2 * px, cssH = h + pt + pb;
+    c.cv.style.cssText = `left:${-px}px;top:${-pt}px;width:${cssW}px;height:${cssH}px`;
+    c.cv.width = Math.round(cssW * slotRatio); c.cv.height = Math.round(cssH * slotRatio);
+    c.dirty = true;
+    return true;
+  };
+  /* draws one candle (alone in the small scene) and copies the picture into its slot */
+  const drawSlot = (c, i, t, flick, isFlame, fAmt) => {
+    const [px, pt, pb] = c.pad, cssW = c.cw + 2 * px, cssH = c.ch + pt + pb, W = c.cv.width, H = c.cv.height;
+    if (sr.domElement.width !== W || sr.domElement.height !== H) { sr.setSize(W, H, false); sCam.aspect = W / H; sCam.updateProjectionMatrix(); }
+    const ppu = cssH / (2 * Math.tan(Math.PI / 12) * SHELF_D);        // css pixels per world unit at the candle's distance
+    const sc = c.ch * 0.74 / ppu * (0.9 + 0.1 * c.lit) * c.size;       // the candle is 1 unit tall: this is its height in world units
+    c.g.visible = true; c.g.scale.setScalar(sc);
+    c.g.position.set(0, (cssH / 2 - (pt + c.ch + 4 - 10 * c.lit)) / ppu, 0);   // sits a little below the slot (on the shelf), lifted when lit
+    c.g.rotation.y = c.turn + (reduce ? 0 : Math.sin(t * 0.4 + i) * 0.25 * c.swayAmt);
+    const dim = 0.62 + 0.38 * c.lit;
+    c.tints.forEach(({ m, base }) => m.color.copy(base).multiplyScalar(dim));
+    const lightUp = isFlame ? (1 + flick * 1.6) * fAmt : 0;
+    c.glows.forEach(({ m, k: gk }) => { m.emissiveIntensity = gk * lightUp; });
+    shelfFire.forEach(m => { m.visible = isFlame; });
+    if (isFlame) {
+      const L = fAmt, fs = c.info.fs, fw = c.info.fw;
+      const fx = (c.info.flameX || 0) * sc, fy = c.g.position.y + c.info.wickY * sc;
+      sHalo.position.set(fx, fy - 0.005 * sc, 0); sFlame.position.copy(sHalo.position); sCore.position.copy(sHalo.position);
+      sFlame.scale.set(0.9 * L * sc * fs * fw, 0.9 * L * sc * fs * (1 + flick * 0.5), 0.9 * L * sc * fs);
+      sCore.scale.set(0.5 * L * sc * fs * fw, 0.5 * L * sc * fs * (1 + flick * 0.6), 0.5 * L * sc * fs);
+      sHalo.scale.set(1.5 * L * sc * fs * fw, 1.15 * L * sc * fs * (1 + flick * 0.4), 1.5 * L * sc * fs);
+      sGlow.position.set(fx, fy + 0.12 * sc, 0); sGlow.scale.setScalar(1.05 * sc * fs);
+      sGlow.material.opacity = (0.9 + flick) * L;
+      sEmber.position.set(fx + 0.0055 * sc, fy, 0); sEmber.scale.setScalar(L * sc);
+      shelfLight.position.set(fx, fy + 0.4 * sc, 0.3 * sc);
+    }
+    shelfLight.intensity = isFlame ? FLAME_LIGHT * (1 + flick * 1.2) * fAmt : 0;
+    sr.render(sScene, sCam);
+    c.ctx.clearRect(0, 0, W, H); c.ctx.drawImage(sr.domElement, 0, 0);
+    c.g.visible = false;
+    c.dirty = false; c.dLit = c.lit; c.dSway = c.swayAmt; c.hadFlame = isFlame;
+    const shelfEl = shelfEls[shelfOf[i]];
+    if (!shelfEl.classList.contains('is3d')) shelfEl.classList.add('is3d');       // the stand-in photos step aside once a candle is really there
+  };
+  /* phones: decides which slots need drawing again. A candle that did not change costs nothing, so scrolling only moves the page. */
+  function layoutSlots(t, flick, k) {
+    const vw = lastW || innerWidth, vh = lastH || innerHeight;
+    const active = shelfItems.findIndex(el => el.classList.contains('is-focus'));   // the lit candle of the shelf nearest the middle carries the flame
+    if (reduce) { if (active >= 0) flameAt = active; flameAmt = active >= 0 ? 1 : 0; }
+    else {
+      if (flameAmt < 0.08 && active >= 0 && active !== flameAt) flameAt = active;
+      flameAmt = clamp(flameAmt + ((active === flameAt ? 1 : 0) - flameAmt) * k * 1.2);
+    }
+    let budget = 3, out = { amt: 0, x: 0, y: 0 };                    // at most three quiet candles per frame; the flame candle is always drawn
+    shelfItems.forEach((item, i) => {
+      const r = item.getBoundingClientRect();
+      if (!(r.bottom > -vh * 0.6 && r.top < vh * 1.6 && r.right > -vw * 0.6 && r.left < vw * 1.6)) return;   // far from the screen: nothing to draw
+      let c = shelfCandles[i];
+      if (!c) c = shelfCandles[i] = makeShelfCandle(item, i);
+      if (!ensureCanvas(c)) return;
+      c.lit += ((item.classList.contains('is-active') ? 1 : 0) - c.lit) * (reduce ? 1 : k);
+      const isFlame = i === flameAt && flameAmt > 0.01;
+      c.swayAmt += ((isFlame ? c.lit : 0) - c.swayAmt) * (reduce ? 1 : k);      // only the candle with the flame sways, and it eases in and out
+      const changed = c.dirty || isFlame || c.hadFlame !== isFlame || Math.abs(c.lit - c.dLit) > 0.004 || Math.abs(c.swayAmt - c.dSway) > 0.004;
+      if (changed && (isFlame || budget-- > 0)) drawSlot(c, i, t, flick, isFlame, flameAmt);
+      if (isFlame) {                                                  // where the flame is on screen, for the warm light of the page
+        const px = c.ch * 0.74 * (0.9 + 0.1 * c.lit) * c.size, rr = c.el.getBoundingClientRect();
+        out = { amt: flameAmt, x: rr.left + rr.width / 2 + (c.info.flameX || 0) * px, y: rr.bottom + 4 - 10 * c.lit - (c.info.wickY + 0.1) * px };
+      }
+    });
+    return out;
+  }
+
   /* places every candle over its slot, and the flame on the lit one. Returns where the flame is on screen, for the room's light. */
-  /* On a phone the page scrolls on its own fast thread, while the candles are redrawn a little later (30 to 60 times a second, on a weak
-     chip). So for a moment the candles trail behind their slots and seem to float. "Lead" moves each candle a little ahead along the way
-     its slot is moving (speed measured from the last two frames), by about one frame. Phones only; ?lead=0 turns it off for comparing. */
-  const lead = lite && qs.get('lead') !== '0';
-  let layoutT = 0;
   function layoutShelf(t, flick, k) {
-    const nowT = performance.now(), leadMs = clamp(nowT - (layoutT || nowT), 16, 40); layoutT = nowT;
     const vw = lastW || innerWidth, vh = lastH || innerHeight;    // the canvas size, which stays constant (the window's height changes with the browser bar)
     const ppu = vh / (2 * Math.tan(Math.PI / 12) * SHELF_D);       // pixels per world unit at the shelf's distance (the field of view is 30 degrees)
     /* every shelf lights its own centred candle, but there is only one flame: it belongs to the shelf nearest the middle of the screen */
@@ -481,16 +572,7 @@ async function start() {
       if (!c.g.visible) return;
       c.lit += ((item.classList.contains('is-active') ? 1 : 0) - c.lit) * (reduce ? 1 : k);
       c.g.scale.setScalar(r.height * 0.74 / ppu * (0.9 + 0.1 * c.lit) * c.size);
-      let lx = 0, ly = 0;
-      if (lead) {
-        const dt = nowT - c.t;
-        if (c.t && dt > 4 && dt < 120) {                              // speed in pixels per millisecond, smoothed so a single odd frame does not jerk the candle
-          c.vx += ((r.left - c.pl) / dt - c.vx) * 0.5; c.vy += ((r.bottom - c.pb) / dt - c.vy) * 0.5;
-        } else c.vx = c.vy = 0;
-        c.t = nowT; c.pl = r.left; c.pb = r.bottom;
-        lx = clamp(c.vx * leadMs, -40, 40); ly = clamp(c.vy * leadMs, -40, 40);
-      }
-      c.g.position.set((r.left + r.width / 2 + lx - vw / 2) / ppu, (vh / 2 - (r.bottom + 4 - 10 * c.lit + ly)) / ppu, 0);   // lifted a little when lit
+      c.g.position.set((r.left + r.width / 2 - vw / 2) / ppu, (vh / 2 - (r.bottom + 4 - 10 * c.lit)) / ppu, 0);   // lifted a little when lit
       c.g.rotation.y = c.turn + (reduce ? 0 : Math.sin(t * 0.4 + i) * 0.25 * c.lit);
       const dim = 0.62 + 0.38 * c.lit;                                // the unlit ones are dimmer
       c.tints.forEach(({ m, base }) => m.color.copy(base).multiplyScalar(dim));
@@ -575,6 +657,7 @@ shelf candles built ${shelfCandles.filter(Boolean).length} of ${shelfItems.lengt
   const clock = new THREE.Clock();
   const flameTop = new THREE.Vector3();
   let cur = 0, burn = 0, side = 0;                                // smoothed: the hero turn, the burn-down, the slide to the side
+  let drewGone = false;                                           // the big canvas has been drawn once with the hero candle gone
   let shelfDrawn = false;                                         // true while the shelf candles were in the last drawn picture
   let igniteAt = null;                                            // when the flame starts to light (a moment after the first frame)
   /* phones: draw 30 frames a second while only the flame moves (60 while the visitor scrolls or touches), and step the resolution down if frames take too long */
@@ -697,7 +780,7 @@ shelf candles built ${shelfCandles.filter(Boolean).length} of ${shelfItems.lengt
     });
 
     /* the candle's light on the page: a warm glow centred on the flame (a CSS layer reads these three values) */
-    const sh = nearShelf ? layoutShelf(t, flick, reduce ? 1 : k) : hideShelf();   // on the shelf the light follows the lit candle
+    const sh = nearShelf ? (slotsOn ? layoutSlots(t, flick, reduce ? 1 : k) : layoutShelf(t, flick, reduce ? 1 : k)) : hideShelf();   // on the shelf the light follows the lit candle
     camera.updateMatrixWorld();
     flameTop.set(cx, cy + (wickTop + 0.1) * cs, 0).project(camera);
     const root = lightEl.style;                                     // only the light layer restyles, not the whole page
@@ -713,7 +796,10 @@ shelf candles built ${shelfCandles.filter(Boolean).length} of ${shelfItems.lengt
     /* behind the content the candle is a little dimmer (more on phones), and at rest it is dim */
     canvas.style.opacity = lerp(lerp(1, wide ? 0.95 : 0.55, side), 1, rest).toFixed(3);
 
-    if (composer) composer.render(); else renderer.render(scene, camera);
+    /* with slots, once the hero candle has gone the big canvas shows only the dark room: draw that once, then leave it alone (half the work on a phone) */
+    const skipMain = slotsOn && nearShelf && gone > 0.98;
+    if (!skipMain || !drewGone) { if (composer) composer.render(); else renderer.render(scene, camera); }
+    drewGone = skipMain;
     jsSum += performance.now() - frameStart; jsN++;
     if (lite && lastExec && idleFor < 400) {                      // while the visitor scrolls: too many slow frames in a row means too many pixels
       ema = ema * 0.9 + (frameStart - lastExec) * 0.1;
@@ -723,7 +809,7 @@ shelf candles built ${shelfCandles.filter(Boolean).length} of ${shelfItems.lengt
     lastExec = frameStart;
     if (perf) perf();
     if (stage.classList.contains('no3d')) { stage.classList.remove('no3d'); document.documentElement.classList.remove('no3d'); }   // 3D started after the timeout: use it
-    if (recipes.length) shelfEls.forEach(s => s.classList.add('is3d'));                   // the shelf candles are drawn: the stand-in photos step aside
+    if (recipes.length && !slotsOn) shelfEls.forEach(s => s.classList.add('is3d'));                   // the shelf candles are drawn: the stand-in photos step aside
     stage.classList.add('ready'); bg.classList.add('ready');       // fades the scene in after the first drawn frame
   }
   /* the shelf candles are built ahead of time, one at a time while the phone is idle, so scrolling to a new candle does not stall */
@@ -735,9 +821,9 @@ shelf candles built ${shelfCandles.filter(Boolean).length} of ${shelfItems.lengt
   const prepare = c => {
     const seen = new Set();
     c.g.traverse(o => {
-      if (o.material) tasks.push(() => renderer.compileAsync(o, camera, scene).catch(() => {}));      // one material at a time
+      if (o.material) tasks.push(() => (slotsOn ? sr : renderer).compileAsync(o, slotsOn ? sCam : camera, slotsOn ? sScene : scene).catch(() => {}));      // one material at a time
       [].concat(o.material || []).forEach(m => {
-        for (const k in m) { const v = m[k]; if (v && v.isTexture && !seen.has(v)) { seen.add(v); tasks.push(() => renderer.initTexture(v)); } }
+        for (const k in m) { const v = m[k]; if (v && v.isTexture && !seen.has(v)) { seen.add(v); tasks.push(() => (slotsOn ? sr : renderer).initTexture(v)); } }
       });
     });
   };

@@ -597,3 +597,9 @@ One entry per decision, newest at the bottom. The vision table is in `brief/visi
 ## 2026-10-29 — candles floating while scrolling on a phone
 - Cause (not measured mid-scroll, it is the usual reason): the page scrolls on its own fast thread, the candles are redrawn later, so they trail behind their shelf slots.
 - Change: on phones each candle is moved ahead by about one frame along the direction its slot is moving (speed from the last two frames, smoothed, limited to 40 px). Both the page scroll and the sideways swipe of a shelf are covered. `?lead=0` turns it off to compare. At rest nothing moves.
+
+## 2026-10-29 — shelf candles drawn INSIDE their slots on phones (replaces the "lead" guess)
+- Why: the user still saw candles jump while scrolling. A fixed canvas redrawn after each scroll step is always 1-2 frames behind the page, which scrolls on the phone's own fast thread; guessing ahead ("lead") cannot remove that, so it was removed again.
+- What: on phones (lite) a second, hidden renderer draws each candle alone (same environment, light, tone mapping and flame as before) and copies the picture into a small canvas `.slot3d` that lives INSIDE the slot, so the phone scrolls it with the page in both directions. A candle is redrawn only when it changes (lit/dim, the flame); the one with the flame is redrawn every frame. Scrolling no longer needs any redraw.
+- Also: once the hero candle is gone, the big canvas (only a dark room) is drawn once and then left alone. `.collection .shelf` got top padding (and the same negative margin) so the flame's glow is not clipped. `?slots=0` returns to the single fixed canvas for comparing. Desktop is unchanged.
+- Checked in a phone-size window: slots draw, flame moves with the selection after a swipe, no console errors, no page overflow. Needs the real-phone check.

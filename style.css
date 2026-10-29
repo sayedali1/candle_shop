@@ -366,7 +366,7 @@ h1,h2,h3,.brand,.promise{font-family:'Amiri','Cairo',serif;font-weight:700}
 /* MANY SHELVES, version 2: plain rows of candles under small titles, and one shared bar for the selected candle */
 .collection{margin-top:clamp(1.2rem,3vw,2rem)}
 .collection-head h3{font-size:clamp(1.2rem,3.4vw,1.7rem)}
-.collection .shelf{--w:clamp(118px,34vw,190px);margin-top:.2rem;padding-bottom:2.2rem}
+.collection .shelf{--w:clamp(118px,34vw,190px);margin-top:-5.3rem;padding-top:5.5rem;padding-bottom:2.2rem}   /* the top padding is room for the flame's glow drawn in the slot; the negative margin keeps the layout the same */
 .collection .shelf-item{gap:0}
 .collection .shelf-tag{top:calc(100% + .8rem);font-size:.8rem}
 .collection .shelf-item.is-active .shelf-tag{opacity:1;color:var(--text)}
@@ -440,3 +440,6 @@ h1,h2,h3,.brand,.promise{font-family:'Amiri','Cairo',serif;font-weight:700}
   .pick{background:rgba(18,12,8,.95)}
   .detail{background:linear-gradient(180deg,rgba(34,21,12,.98),rgba(20,12,7,.99))}
 }
+
+/* phones: each shelf candle is drawn in a small canvas inside its slot (candle.js), so it scrolls together with the page */
+.slot3d{position:absolute;pointer-events:none;z-index:1}
