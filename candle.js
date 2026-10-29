@@ -432,6 +432,7 @@ async function start() {
   const makeShelfCandle = (item, i) => {
     const c = builder.build(recipes[i % recipes.length]);
     c.g = c.group; c.el = item.querySelector('.img'); c.lit = 0;    // the slot is the picture box of the item
+    c.vx = c.vy = 0; c.t = 0; c.pl = c.pb = 0;                      // how fast the slot is moving on screen (see "lead" in layoutShelf)
     c.g.visible = false; shelfGroup.add(c.g);
     return c;
   };
@@ -449,8 +450,14 @@ async function start() {
   const hideShelf = () => { shelfGroup.visible = false; return { amt: 0, x: 0, y: 0 }; };
 
   /* places every candle over its slot, and the flame on the lit one. Returns where the flame is on screen, for the room's light. */
+  /* On a phone the page scrolls on its own fast thread, while the candles are redrawn a little later (30 to 60 times a second, on a weak
+     chip). So for a moment the candles trail behind their slots and seem to float. "Lead" moves each candle a little ahead along the way
+     its slot is moving (speed measured from the last two frames), by about one frame. Phones only; ?lead=0 turns it off for comparing. */
+  const lead = lite && qs.get('lead') !== '0';
+  let layoutT = 0;
   function layoutShelf(t, flick, k) {
-    const vw = lastW || innerWidth, vh = lastH || innerHeight;     // the canvas size, which stays constant (the window's height changes with the browser bar)
+    const nowT = performance.now(), leadMs = clamp(nowT - (layoutT || nowT), 16, 40); layoutT = nowT;
+    const vw = lastW || innerWidth, vh = lastH || innerHeight;    // the canvas size, which stays constant (the window's height changes with the browser bar)
     const ppu = vh / (2 * Math.tan(Math.PI / 12) * SHELF_D);       // pixels per world unit at the shelf's distance (the field of view is 30 degrees)
     /* every shelf lights its own centred candle, but there is only one flame: it belongs to the shelf nearest the middle of the screen */
     const sRects = shelfEls.map(s => s.getBoundingClientRect());
@@ -474,7 +481,16 @@ async function start() {
       if (!c.g.visible) return;
       c.lit += ((item.classList.contains('is-active') ? 1 : 0) - c.lit) * (reduce ? 1 : k);
       c.g.scale.setScalar(r.height * 0.74 / ppu * (0.9 + 0.1 * c.lit) * c.size);
-      c.g.position.set((r.left + r.width / 2 - vw / 2) / ppu, (vh / 2 - (r.bottom + 4 - 10 * c.lit)) / ppu, 0);   // lifted a little when lit
+      let lx = 0, ly = 0;
+      if (lead) {
+        const dt = nowT - c.t;
+        if (c.t && dt > 4 && dt < 120) {                              // speed in pixels per millisecond, smoothed so a single odd frame does not jerk the candle
+          c.vx += ((r.left - c.pl) / dt - c.vx) * 0.5; c.vy += ((r.bottom - c.pb) / dt - c.vy) * 0.5;
+        } else c.vx = c.vy = 0;
+        c.t = nowT; c.pl = r.left; c.pb = r.bottom;
+        lx = clamp(c.vx * leadMs, -40, 40); ly = clamp(c.vy * leadMs, -40, 40);
+      }
+      c.g.position.set((r.left + r.width / 2 + lx - vw / 2) / ppu, (vh / 2 - (r.bottom + 4 - 10 * c.lit + ly)) / ppu, 0);   // lifted a little when lit
       c.g.rotation.y = c.turn + (reduce ? 0 : Math.sin(t * 0.4 + i) * 0.25 * c.lit);
       const dim = 0.62 + 0.38 * c.lit;                                // the unlit ones are dimmer
       c.tints.forEach(({ m, base }) => m.color.copy(base).multiplyScalar(dim));

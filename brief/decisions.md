@@ -593,3 +593,7 @@ One entry per decision, newest at the bottom. The vision table is in `brief/visi
 - Before (real phone, BrowserStack Galaxy M32): first frame 3.6-3.9 s. After: to be measured once deployed.
 - Measured on the real phone (Galaxy M32): first visit first frame 3.37 s (about the same as before, 3.3-3.9 s); RETURN visit first frame 0.97 s with a worst early frame of 80 ms.
 - The first deploy showed `vendor/` served with the 5-minute rule: in `vercel.json` the later generic `.js` rule overrode the `vendor/` one. Reordered so `vendor/` comes last and wins.
+
+## 2026-10-29 — candles floating while scrolling on a phone
+- Cause (not measured mid-scroll, it is the usual reason): the page scrolls on its own fast thread, the candles are redrawn later, so they trail behind their shelf slots.
+- Change: on phones each candle is moved ahead by about one frame along the direction its slot is moving (speed from the last two frames, smoothed, limited to 40 px). Both the page scroll and the sideways swipe of a shelf are covered. `?lead=0` turns it off to compare. At rest nothing moves.
