@@ -580,3 +580,9 @@ One entry per decision, newest at the bottom. The vision table is in `brief/visi
 ## 2026-10-29 — less lag when candles first appear
 - Measured: building a candle is cheap (first ~17 ms, then ~1 ms on a laptop). The stall on a phone is the graphics chip compiling each material and receiving textures the first time a candle is drawn.
 - The idle pre-build now also compiles the materials (`compileAsync`) and uploads the textures (`initTexture`) of each candle ahead of time, one candle per quiet moment, and waits while the visitor is scrolling or touching.
+
+## 2026-10-29 — load freeze found on a real phone (Galaxy M32 via BrowserStack)
+- Worst frame in the first 8 s: 638 ms (as it was), 651 ms with a lower resolution (1.25), 650 ms with an early hero compile: neither idea helped, so both were removed.
+- With the idle shelf pre-build off the worst frame was 112 ms, so the pre-build was the freeze (671 ms). It prepared a whole candle at once.
+- Fix: the pre-build now works in small pieces (one texture or one material per quiet moment). Result: worst early frame 235 ms, shelves 30 fps with a 41 ms slowest frame, all 20 candles ready.
+- `?perf` now also shows the first-frame time and when the worst early frame happened; `?w=0` turns the pre-build off for measuring.

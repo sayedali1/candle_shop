@@ -56,8 +56,8 @@ async function start() {
 
   renderer.toneMapping = THREE.ACESFilmicToneMapping;
   renderer.toneMappingExposure = 1.05;
-  const qs = new URLSearchParams(location.search);                 // ?r=1.25 and ?b=1 switch the two phone load experiments on, for measuring on a real phone
-  let pixelRatio = Math.min(devicePixelRatio || 1, +qs.get('r') || (lite ? 1.5 : 2));      // (a phone may step it down while scrolling, see the frame loop)
+  const qs = new URLSearchParams(location.search);                 // ?w=0 turns the idle pre-build off (for measuring)
+  let pixelRatio = Math.min(devicePixelRatio || 1, (lite ? 1.5 : 2));      // (a phone may step it down while scrolling, see the frame loop)
   renderer.setPixelRatio(pixelRatio);
   renderer.shadowMap.enabled = !lite;                              // real soft shadows on desktop; phones keep the cheap painted contact shadow
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
@@ -736,10 +736,6 @@ shelf candles built ${shelfCandles.filter(Boolean).length} of ${shelfItems.lengt
     setTimeout(() => idle(warm), 60);
   };
   if (qs.get('w') !== '0') setTimeout(() => idle(warm), 1500);    // after the hero has started (?w=0 turns the pre-build off, for measuring)
-  if (qs.get('b') === '1') {                                      // experiment: compile the hero's materials in parallel and send its textures BEFORE the first frame, so that frame is not the one that freezes
-    scene.traverse(o => [].concat(o.material || []).forEach(m => { for (const k in m) { const v = m[k]; if (v && v.isTexture) renderer.initTexture(v); } }));
-    await Promise.race([renderer.compileAsync(scene, camera).catch(() => {}), new Promise(r => setTimeout(r, 2500))]);
-  }
   frame();
 }
 
