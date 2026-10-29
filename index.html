@@ -14,13 +14,13 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Amiri:wght@700&display=swap" rel="stylesheet">
-<link rel="modulepreload" href="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js">
+<link rel="modulepreload" href="./vendor/three/build/three.module.js">
 <link rel="stylesheet" href="style.css?v=22">
-<!-- Three.js from a CDN, pinned to one version. If it cannot load, the page shows the photo instead. -->
+<!-- Three.js 0.160.0, a copy kept in vendor/three (same server, cached). If it cannot load, the page shows the photo instead. -->
 <script type="importmap">
 { "imports": {
-  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
-  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  "three": "./vendor/three/build/three.module.js",
+  "three/addons/": "./vendor/three/examples/jsm/"
 } }
 </script>
 </head>
@@ -249,7 +249,7 @@
   <div class="detail-foot"><a class="btn" id="detailOrder" href="#" target="_blank" rel="noopener">اطلب عبر واتساب</a></div>
 </aside>
 <script src="page.js?v=18" defer></script>
-<script type="module" src="candle.js?v=17"></script>
+<script type="module" src="candle.js?v=18"></script>
 </body>
 </html>
 

@@ -586,3 +586,8 @@ One entry per decision, newest at the bottom. The vision table is in `brief/visi
 - With the idle shelf pre-build off the worst frame was 112 ms, so the pre-build was the freeze (671 ms). It prepared a whole candle at once.
 - Fix: the pre-build now works in small pieces (one texture or one material per quiet moment). Result: worst early frame 235 ms, shelves 30 fps with a 41 ms slowest frame, all 20 candles ready.
 - `?perf` now also shows the first-frame time and when the worst early frame happened; `?w=0` turns the pre-build off for measuring.
+
+## 2026-10-29 — Three.js hosted on our own domain, plus cache settings
+- A pinned copy of Three.js 0.160.0 (and the 5 effect files the desktop bloom needs, with their 5 helper files) now lives in `vendor/three/`, and the import map in `index.html`, `lab.html` and `sheet.html` points there (`./vendor/...`). No request goes to jsDelivr any more.
+- `vercel.json` sets caching: `vendor/` for a year (the version is pinned; a new version would get a new path), `assets/` for a day, `.js/.css/.json` for 5 minutes with background refresh.
+- Before (real phone, BrowserStack Galaxy M32): first frame 3.6-3.9 s. After: to be measured once deployed.
