@@ -462,17 +462,21 @@ async function start() {
   let flameAt = 0, flameAmt = 0;                                  // which candle holds the flame, and how strongly it burns
   const hideShelf = () => { shelfGroup.visible = false; return { amt: 0, x: 0, y: 0 }; };
   /* makes the hidden renderer: a few seconds after the page has opened (idle time), or at once if the visitor reaches the shelf sooner */
-  const initSlots = () => {
-    if (sr || !slotsOn) return;
+  /* It is done in two small steps (the graphics context, then the reflections it needs), each in a quiet moment, so no single step freezes the page. */
+  const slotsReady = () => !slotsOn || !!(sr && sScene.environment);
+  const initSlotsStep = () => {
+    if (slotsReady()) return;
     try {
-      sr = new THREE.WebGLRenderer({ antialias: true, alpha: true, premultipliedAlpha: true, powerPreference: 'high-performance' });
-      sr.toneMapping = THREE.ACESFilmicToneMapping; sr.toneMappingExposure = 1.05; sr.setPixelRatio(1);
-      sScene.environment = new THREE.PMREMGenerator(sr).fromScene(studio, 0.02).texture;
+      if (!sr) {
+        sr = new THREE.WebGLRenderer({ antialias: true, alpha: true, premultipliedAlpha: true, powerPreference: 'high-performance' });
+        sr.toneMapping = THREE.ACESFilmicToneMapping; sr.toneMappingExposure = 1.05; sr.setPixelRatio(1);
+      } else sScene.environment = new THREE.PMREMGenerator(sr).fromScene(studio, 0.02).texture;
     } catch (e) {                                                   // no second graphics context: go back to the single fixed canvas
       console.warn('slot drawing off:', e); slotsOn = false; sr = null;
       shelfGroup.add(...shelfFire, shelfLight);
     }
   };
+  const initSlots = () => { while (!slotsReady()) initSlotsStep(); };          // all at once: the visitor reached the shelf before the quiet steps were done
 
   /* the slot's own canvas: bigger than the slot, so the flame's glow has room (it is only a picture; taps pass through to the slot) */
   const SLOT_PAD = { x: 0.3, top: 0.4, bottom: 0.14 };               // fractions of the slot's size
@@ -526,7 +530,7 @@ async function start() {
   };
   /* phones: decides which slots need drawing again. A candle that did not change costs nothing, so scrolling only moves the page. */
   function layoutSlots(t, flick, k) {
-    if (!sr) { initSlots(); if (!slotsOn) return layoutShelf(t, flick, k); }
+    if (!slotsReady()) { initSlots(); if (!slotsOn) return layoutShelf(t, flick, k); }
     const vw = lastW || innerWidth, vh = lastH || innerHeight;
     const active = shelfItems.findIndex(el => el.classList.contains('is-focus'));   // the lit candle of the shelf nearest the middle carries the flame
     if (reduce) { if (active >= 0) flameAt = active; flameAmt = active >= 0 ? 1 : 0; }
@@ -836,15 +840,15 @@ shelf candles built ${shelfCandles.filter(Boolean).length} of ${shelfItems.lengt
     });
   };
   const warm = () => {
-    initSlots();
     if (performance.now() - lastActive < 400) return setTimeout(() => idle(warm), 400);   // the visitor is moving: wait
-    if (tasks.length) tasks.shift()();
+    if (!slotsReady()) initSlotsStep();                           // first the hidden renderer, in its small steps
+    else if (tasks.length) tasks.shift()();
     else {
       const i = recipes.length ? shelfCandles.findIndex(c => !c) : -1;
       if (i < 0) return;
       prepare(shelfCandles[i] = makeShelfCandle(shelfItems[i], i));
     }
-    setTimeout(() => idle(warm), 60);
+    setTimeout(() => idle(warm), slotsReady() ? 60 : 250);
   };
   if (qs.get('w') !== '0') setTimeout(() => idle(warm), slotsOn ? 4500 : 1500);    // after the hero has started (?w=0 turns the pre-build off, for measuring)
   frame();
