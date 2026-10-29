@@ -433,15 +433,10 @@ async function start() {
      with the page, in both directions. A candle is drawn again only when it changes (lit or not, the flame); a second, hidden renderer does the
      drawing and the result is copied into the slot. ?slots=0 goes back to the single fixed canvas, for comparing. */
   let slotsOn = lite && qs.get('slots') !== '0', sr = null, sScene = null, sCam = null;
-  if (slotsOn) {
-    try {
-      sr = new THREE.WebGLRenderer({ antialias: true, alpha: true, premultipliedAlpha: true, powerPreference: 'high-performance' });
-      sr.toneMapping = THREE.ACESFilmicToneMapping; sr.toneMappingExposure = 1.05; sr.setPixelRatio(1);
-      sScene = new THREE.Scene();
-      sScene.environment = new THREE.PMREMGenerator(sr).fromScene(studio, 0.02).texture;
-      sScene.add(new THREE.HemisphereLight(0x6a5a4a, 0x120c08, 0.3));
-      sCam = new THREE.PerspectiveCamera(30, 1, 0.1, 50); sCam.position.set(0, 0, SHELF_D);
-    } catch (e) { console.warn('slot drawing off:', e); slotsOn = false; sr = null; }
+  if (slotsOn) {                                                    // the hidden renderer itself is made later (initSlots): making it at the start made the first seconds heavier
+    sScene = new THREE.Scene();
+    sScene.add(new THREE.HemisphereLight(0x6a5a4a, 0x120c08, 0.3));
+    sCam = new THREE.PerspectiveCamera(30, 1, 0.1, 50); sCam.position.set(0, 0, SHELF_D);
   }
   const slotRatio = Math.min(devicePixelRatio || 1, 1.5);
 
@@ -466,6 +461,18 @@ async function start() {
   (slotsOn ? sScene : shelfGroup).add(...shelfFire, shelfLight);
   let flameAt = 0, flameAmt = 0;                                  // which candle holds the flame, and how strongly it burns
   const hideShelf = () => { shelfGroup.visible = false; return { amt: 0, x: 0, y: 0 }; };
+  /* makes the hidden renderer: a few seconds after the page has opened (idle time), or at once if the visitor reaches the shelf sooner */
+  const initSlots = () => {
+    if (sr || !slotsOn) return;
+    try {
+      sr = new THREE.WebGLRenderer({ antialias: true, alpha: true, premultipliedAlpha: true, powerPreference: 'high-performance' });
+      sr.toneMapping = THREE.ACESFilmicToneMapping; sr.toneMappingExposure = 1.05; sr.setPixelRatio(1);
+      sScene.environment = new THREE.PMREMGenerator(sr).fromScene(studio, 0.02).texture;
+    } catch (e) {                                                   // no second graphics context: go back to the single fixed canvas
+      console.warn('slot drawing off:', e); slotsOn = false; sr = null;
+      shelfGroup.add(...shelfFire, shelfLight);
+    }
+  };
 
   /* the slot's own canvas: bigger than the slot, so the flame's glow has room (it is only a picture; taps pass through to the slot) */
   const SLOT_PAD = { x: 0.3, top: 0.4, bottom: 0.14 };               // fractions of the slot's size
@@ -519,6 +526,7 @@ async function start() {
   };
   /* phones: decides which slots need drawing again. A candle that did not change costs nothing, so scrolling only moves the page. */
   function layoutSlots(t, flick, k) {
+    if (!sr) { initSlots(); if (!slotsOn) return layoutShelf(t, flick, k); }
     const vw = lastW || innerWidth, vh = lastH || innerHeight;
     const active = shelfItems.findIndex(el => el.classList.contains('is-focus'));   // the lit candle of the shelf nearest the middle carries the flame
     if (reduce) { if (active >= 0) flameAt = active; flameAmt = active >= 0 ? 1 : 0; }
@@ -828,6 +836,7 @@ shelf candles built ${shelfCandles.filter(Boolean).length} of ${shelfItems.lengt
     });
   };
   const warm = () => {
+    initSlots();
     if (performance.now() - lastActive < 400) return setTimeout(() => idle(warm), 400);   // the visitor is moving: wait
     if (tasks.length) tasks.shift()();
     else {
@@ -837,7 +846,7 @@ shelf candles built ${shelfCandles.filter(Boolean).length} of ${shelfItems.lengt
     }
     setTimeout(() => idle(warm), 60);
   };
-  if (qs.get('w') !== '0') setTimeout(() => idle(warm), 1500);    // after the hero has started (?w=0 turns the pre-build off, for measuring)
+  if (qs.get('w') !== '0') setTimeout(() => idle(warm), slotsOn ? 4500 : 1500);    // after the hero has started (?w=0 turns the pre-build off, for measuring)
   frame();
 }
 
