@@ -44,7 +44,6 @@ function fillPick() {
   const p = data ? data.items[k % data.items.length] : null;
   pickBar.querySelector('.pick-name').textContent = focusItem.dataset.name;
   pickBar.querySelector('.pick-facts').textContent = p ? `${p.size} · ${p.burn} · ${p.family}` : '';
-  pickBar.querySelector('a.btn').href = focusItem.dataset.href;
   clearTimeout(pickTimer);                                           // announce the selected candle once the swipe settles
   pickTimer = setTimeout(() => { pickBar.querySelector('.sr-only').textContent = focusItem.dataset.name + (p ? '، ' + p.family : ''); }, 450);
 }
@@ -93,7 +92,7 @@ function buildShelves(data) {
   /* the one shared bar: sticks to the bottom of the screen while the shelves are in view */
   pickBar = document.createElement('div'); pickBar.className = 'pick';
   pickBar.innerHTML = `<div class="pick-info"><h3 class="pick-name"></h3><p class="pick-facts"></p></div>
-    <div class="pick-actions"><a class="btn btn-small" href="#" target="_blank" rel="noopener">اطلب عبر واتساب</a><button type="button" class="detail-open" data-pick-detail>التفاصيل</button></div>
+    <div class="pick-actions"><button type="button" class="btn btn-small" data-pick-add>أضف للطلب</button><button type="button" class="detail-open" data-pick-detail>التفاصيل</button></div>
     <p class="sr-only" aria-live="polite"></p>`;
   sec.append(pickBar);
 }
@@ -221,7 +220,7 @@ window.shelvesReady = (async () => {
       <section class="callout"><h4>إن وصلت تالفة</h4><p>${esc(c.damaged)}</p></section>
     </div>`;
     panel.classList.toggle('has-shot', !!p.photo);
-    document.getElementById('detailOrder').href = items[k].dataset.href || items[k].querySelector('a.btn').href;
+    document.getElementById('detailOrder').dataset.k = k;             // the order basket (below) adds this candle when the button is pressed
     body.scrollTop = 0;
   };
   const open = k => {
@@ -248,6 +247,114 @@ window.shelvesReady = (async () => {
   document.getElementById('detailClose').addEventListener('click', close);
   scrim.addEventListener('click', close);
   addEventListener('keydown', e => { if (e.key === 'Escape' && current >= 0) close(); });
+})();
+
+/* THE ORDER BASKET: the buyer adds as many candles as they like, writes a note for each (a name, a colour, a gift message...), and sends
+   everything as ONE WhatsApp message. There are no prices here: the seller answers with the price and what she can make, on WhatsApp.
+   The basket is kept in this browser (localStorage) so a reload does not lose it. */
+(async () => {
+  const data = await window.shelvesReady;
+  if (!data || !pickBar) return;
+  const WA = 'https://wa.me/0000000000', KEY = 'candle-order', MAXQ = 20;     // the same test number as every other order button
+  const items = [...document.querySelectorAll('.shelf-item')];
+  const nameOf = k => items[k].dataset.name;
+  let st = { items: [], general: '', name: '' };
+  try {
+    const s = JSON.parse(localStorage.getItem(KEY) || 'null');
+    if (s && Array.isArray(s.items)) st = { items: s.items.filter(x => Number.isInteger(x.k) && x.k >= 0 && x.k < items.length).map(x => ({ k: x.k, qty: Math.min(Math.max(+x.qty || 1, 1), MAXQ), note: String(x.note || '') })), general: String(s.general || ''), name: String(s.name || '') };
+  } catch (e) { /* no saved basket */ }
+  const save = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) { /* private window: the basket just lives until reload */ } };
+  const total = () => st.items.reduce((n, x) => n + x.qty, 0);
+
+  const btn = document.getElementById('basketBtn'), badge = document.getElementById('basketCount');
+  const panel = document.getElementById('order'), body = document.getElementById('orderBody'), scrim = document.getElementById('orderScrim'), send = document.getElementById('orderSend');
+  const say = pickBar.querySelector('.sr-only');
+
+  /* the message the seller receives */
+  const message = () => {
+    const lines = ['مرحبًا، أريد أن أطلب:'];
+    st.items.forEach((x, i) => lines.push(`${arDigits(i + 1)}) ${nameOf(x.k)} × ${arDigits(x.qty)}` + (x.note.trim() ? `\n   ملاحظة: ${x.note.trim()}` : '')));
+    if (st.general.trim()) lines.push('', 'ملاحظات عامة: ' + st.general.trim());
+    if (st.name.trim()) lines.push('', 'الاسم: ' + st.name.trim());
+    return lines.join('\n');
+  };
+  const refresh = () => {
+    const n = total();
+    btn.hidden = n === 0; badge.textContent = arDigits(n);
+    send.setAttribute('aria-disabled', String(n === 0));
+    send.href = n ? WA + '?text=' + encodeURIComponent(message()) : '#';
+  };
+  send.addEventListener('click', e => { if (send.getAttribute('aria-disabled') === 'true') e.preventDefault(); });
+
+  const add = k => {
+    const x = st.items.find(i => i.k === k);
+    if (x) x.qty = Math.min(x.qty + 1, MAXQ); else st.items.push({ k, qty: 1, note: '' });
+    save(); refresh();
+    btn.classList.remove('bump'); void btn.offsetWidth; btn.classList.add('bump');
+    const q = st.items.find(i => i.k === k).qty;
+    say.textContent = `أُضيفت ${nameOf(k)} إلى الطلب، الكمية ${arDigits(q)}`;
+    return q;
+  };
+  const flash = (el, q) => {                                          // a short "added" answer on the button that was pressed
+    const was = el.dataset.label || (el.dataset.label = el.textContent);
+    el.textContent = q > 1 ? `✓ في طلبك × ${arDigits(q)}` : '✓ أُضيفت للطلب';
+    clearTimeout(el._t); el._t = setTimeout(() => { el.textContent = was; }, 1400);
+  };
+  pickBar.querySelector('[data-pick-add]').addEventListener('click', e => { const k = items.indexOf(focusItem); if (k >= 0) flash(e.currentTarget, add(k)); });
+  const dOrder = document.getElementById('detailOrder');
+  dOrder.addEventListener('click', () => { const k = Number(dOrder.dataset.k); if (Number.isInteger(k) && k >= 0) flash(dOrder, add(k)); });
+
+  /* the order panel */
+  let opener = null, isOpen = false;
+  const setInert = on => [...document.body.children].forEach(el => { if (el !== panel && el !== scrim && el.tagName !== 'SCRIPT') el.inert = on; });
+  const draw = () => {
+    if (!st.items.length) {
+      body.innerHTML = `<div class="order-in"><h3 id="orderTitle">طلبك</h3><p class="order-empty">طلبك فارغ. اختر شمعة من الرفوف واضغط «أضف للطلب».</p></div>`;
+      return;
+    }
+    body.innerHTML = `<div class="order-in"><div><h3 id="orderTitle">طلبك</h3>
+      <p class="lead">راجع شمعاتك وأضف ما تريد من ملاحظات، ثم أرسل الطلب. السعر وما يمكن تنفيذه يؤكدهما لك البائع على واتساب.</p></div>
+      <ul class="order-list">${st.items.map(x => `<li class="oi" data-k="${x.k}">
+        <div class="oi-head"><b>${esc(nameOf(x.k))}</b>
+          <div class="qty" role="group" aria-label="الكمية"><button type="button" data-q="-1" aria-label="أنقص الكمية">−</button><output aria-live="polite">${arDigits(x.qty)}</output><button type="button" data-q="1" aria-label="زِد الكمية">+</button></div></div>
+        <label>ملاحظة لهذه الشمعة (اختياري)<textarea rows="2" data-note maxlength="300" placeholder="اكتب أي تخصيص تريده، مثل اسم أو رسالة أو لون">${esc(x.note)}</textarea></label>
+        <button type="button" class="oi-remove" data-remove>حذف ${esc(nameOf(x.k))} من الطلب</button></li>`).join('')}</ul>
+      <label>ملاحظات عامة (اختياري)<textarea rows="2" id="orderGeneral" maxlength="400" placeholder="موعد التسليم أو العنوان أو أي طلب آخر">${esc(st.general)}</textarea></label>
+      <label>اسمك (اختياري)<input id="orderName" type="text" maxlength="60" autocomplete="name" value="${esc(st.name)}"></label>
+      <button type="button" class="oi-clear" data-clear>تفريغ الطلب</button></div>`;
+  };
+  body.addEventListener('click', e => {
+    const li = e.target.closest('.oi'), x = li && st.items.find(i => i.k === Number(li.dataset.k));
+    const q = e.target.closest('[data-q]');
+    if (q && x) { x.qty = Math.min(Math.max(x.qty + Number(q.dataset.q), 1), MAXQ); li.querySelector('output').textContent = arDigits(x.qty); }
+    else if (e.target.closest('[data-remove]') && x) { st.items = st.items.filter(i => i !== x); draw(); const f = body.querySelector('[data-remove]'); if (f) f.focus(); else panel.focus(); }
+    else if (e.target.closest('[data-clear]')) { st.items = []; draw(); panel.focus(); }
+    else return;
+    save(); refresh();
+  });
+  body.addEventListener('input', e => {
+    const li = e.target.closest('.oi'), x = li && st.items.find(i => i.k === Number(li.dataset.k));
+    if (x && e.target.matches('[data-note]')) x.note = e.target.value;
+    else if (e.target.id === 'orderGeneral') st.general = e.target.value;
+    else if (e.target.id === 'orderName') st.name = e.target.value;
+    else return;
+    save(); refresh();
+  });
+  const open = () => {
+    opener = document.activeElement; draw(); body.scrollTop = 0; isOpen = true;
+    scrim.hidden = false; panel.setAttribute('aria-hidden', 'false'); setInert(true);
+    requestAnimationFrame(() => { scrim.classList.add('open'); panel.classList.add('open'); panel.focus({ preventScroll: true }); });
+  };
+  const close = () => {
+    isOpen = false; panel.classList.remove('open'); scrim.classList.remove('open'); panel.setAttribute('aria-hidden', 'true');
+    setTimeout(() => { scrim.hidden = true; }, 350); setInert(false);
+    if (opener && opener.focus) opener.focus({ preventScroll: true });
+  };
+  btn.addEventListener('click', open);
+  document.getElementById('orderClose').addEventListener('click', close);
+  scrim.addEventListener('click', close);
+  addEventListener('keydown', e => { if (e.key === 'Escape' && isOpen) close(); });
+  refresh();
 })();
 
 /* ABOUT: the line beside the steps is a fuse. A small ember travels down it as you scroll, and each step lights up when the ember

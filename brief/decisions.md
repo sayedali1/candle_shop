@@ -605,3 +605,8 @@ One entry per decision, newest at the bottom. The vision table is in `brief/visi
 - Checked in a phone-size window: slots draw, flame moves with the selection after a swipe, no console errors, no page overflow. Needs the real-phone check.
 - The hidden renderer is now made later (`initSlots`): by the idle step about 4.5 s after load, or at once if the visitor reaches the shelf first. Reason: creating it at start raised the worst early frame from ~220 ms to 430 ms on the real phone. To be measured.
 - The hidden renderer's start-up is now split in two quiet steps (graphics context, then reflections) in the idle queue; if the visitor reaches the shelf first, both run at once. Before: one ~450 ms hitch at ~7 s on the real phone. To be measured.
+
+## 2026-10-29 — order basket (more than one candle, with notes), no prices
+- Decision (the user): no prices on the page; the buyer chooses everything, then ONE WhatsApp message goes to the seller, who talks price and what she can make there.
+- "أضف للطلب" replaces the direct WhatsApp button on the shared bar and in the detail sheet. A pill "طلبك (n)" appears in the header once something was added and opens the order sheet: each candle with quantity (1-20), a free-text note (name, message, colour...), a general note, an optional name, a clear-all button. "أرسل الطلب عبر واتساب" opens wa.me (test number) with a readable list.
+- Kept in localStorage so a reload keeps the basket. Customization is only free text: what the seller can really offer is the client's fact, to be asked; a live preview of her real options is the next step.

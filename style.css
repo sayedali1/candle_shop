@@ -443,3 +443,31 @@ h1,h2,h3,.brand,.promise{font-family:'Amiri','Cairo',serif;font-weight:700}
 
 /* phones: each shelf candle is drawn in a small canvas inside its slot (candle.js), so it scrolls together with the page */
 .slot3d{position:absolute;pointer-events:none;z-index:1}
+
+/* ---------- the order basket (no prices: the order is sent as one WhatsApp message) ---------- */
+.top-actions{display:flex;align-items:center;gap:.6rem}
+.basket-btn{display:inline-flex;align-items:center;gap:.45rem;min-height:44px;padding:.35rem .5rem .35rem .85rem;border-radius:999px;border:1px solid rgba(232,161,74,.55);background:rgba(18,12,8,.7);color:var(--text);font:inherit;font-size:.9rem;font-weight:700;cursor:pointer;transition:background .2s,border-color .2s}
+.basket-btn[hidden]{display:none}
+.basket-btn:hover{background:rgba(40,26,15,.95);border-color:var(--amber)}
+.basket-btn svg{width:18px;height:18px;stroke:var(--amber);fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.basket-btn b{min-width:1.7rem;height:1.7rem;display:grid;place-items:center;border-radius:999px;background:var(--amber);color:var(--on-amber);font-size:.85rem}
+.basket-btn.bump b{animation:bump .45s}
+@keyframes bump{40%{transform:scale(1.4)}}
+button.btn{border:0;font-family:inherit;cursor:pointer}
+.order-in{padding:1.2rem 1.5rem 1.6rem;display:grid;gap:1.1rem}
+.order-in h3{margin:0 0 .3rem;font-size:1.6rem}
+.order-in .lead,.order-empty{margin:0;color:var(--muted)}
+.order-list{list-style:none;margin:0;padding:0;display:grid;gap:.9rem}
+.oi{display:grid;gap:.6rem;padding:.8rem .9rem;border:1px solid rgba(245,233,214,.14);border-radius:16px;background:rgba(245,233,214,.04)}
+.oi-head{display:flex;justify-content:space-between;align-items:center;gap:.6rem}
+.oi-head b{font-size:1.1rem}
+.qty{display:inline-flex;align-items:center;gap:.15rem}
+.qty button{width:44px;height:44px;border-radius:50%;border:1px solid rgba(245,233,214,.22);background:transparent;color:var(--text);font:inherit;font-size:1.4rem;line-height:1;cursor:pointer}
+.qty button:hover{border-color:var(--amber)}
+.qty output{min-width:2rem;text-align:center;font-weight:700}
+.order-in label{display:grid;gap:.35rem;color:var(--muted);font-size:.9rem}
+.order-in textarea,.order-in input{width:100%;font:inherit;font-size:1rem;color:var(--text);background:rgba(10,6,4,.6);border:1px solid rgba(245,233,214,.18);border-radius:12px;padding:.6rem .8rem;resize:vertical}
+.oi-remove,.oi-clear{justify-self:start;min-height:44px;padding:0 .2rem;background:none;border:0;color:var(--muted);font:inherit;font-size:.9rem;text-decoration:underline;cursor:pointer}
+.oi-remove:hover,.oi-clear:hover{color:var(--text)}
+#orderSend[aria-disabled="true"]{opacity:.4;pointer-events:none}
+@media (max-width:860px){.order{max-height:84vh}}   /* the order list can be long: more room than the detail sheet */

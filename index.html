@@ -15,7 +15,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700&family=Amiri:wght@700&display=swap" rel="stylesheet">
 <link rel="modulepreload" href="./vendor/three/build/three.module.js">
-<link rel="stylesheet" href="style.css?v=23">
+<link rel="stylesheet" href="style.css?v=25">
 <!-- Three.js 0.160.0, a copy kept in vendor/three (same server, cached). If it cannot load, the page shows the photo instead. -->
 <script type="importmap">
 { "imports": {
@@ -35,7 +35,11 @@
 
 <header class="top">
   <span class="brand">علامة تجريبية</span>
-  <a class="btn btn-small away" href="https://wa.me/0000000000" target="_blank" rel="noopener" aria-label="اطلب عبر واتساب">واتساب</a>
+  <div class="top-actions">
+    <!-- the order basket: shown once a candle was added (page.js) -->
+    <button type="button" class="basket-btn" id="basketBtn" hidden aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 8h12l-1 11H7L6 8zM9 8a3 3 0 0 1 6 0"/></svg><span>طلبك</span><b id="basketCount">٠</b></button>
+    <a class="btn btn-small away" href="https://wa.me/0000000000" target="_blank" rel="noopener" aria-label="اطلب عبر واتساب">واتساب</a>
+  </div>
 </header>
 
 <main id="main">
@@ -246,9 +250,17 @@
 <aside class="detail" id="detail" role="dialog" aria-modal="true" aria-labelledby="detailName" aria-hidden="true" tabindex="-1">
   <div class="detail-head"><button type="button" class="detail-close" id="detailClose" aria-label="إغلاق"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
   <div class="detail-body" id="detailBody"></div>
-  <div class="detail-foot"><a class="btn" id="detailOrder" href="#" target="_blank" rel="noopener">اطلب عبر واتساب</a></div>
+  <div class="detail-foot"><button type="button" class="btn" id="detailOrder">أضف للطلب</button></div>
 </aside>
-<script src="page.js?v=18" defer></script>
+
+<!-- THE ORDER: every candle the buyer added, with a note for each one. It is sent as ONE WhatsApp message; prices are talked about with the seller there. -->
+<div class="detail-scrim" id="orderScrim" hidden></div>
+<aside class="detail order" id="order" role="dialog" aria-modal="true" aria-labelledby="orderTitle" aria-hidden="true" tabindex="-1">
+  <div class="detail-head"><button type="button" class="detail-close" id="orderClose" aria-label="إغلاق"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg></button></div>
+  <div class="detail-body" id="orderBody"></div>
+  <div class="detail-foot"><a class="btn" id="orderSend" href="#" target="_blank" rel="noopener" aria-disabled="true">أرسل الطلب عبر واتساب</a></div>
+</aside>
+<script src="page.js?v=19" defer></script>
 <script type="module" src="candle.js?v=22"></script>
 </body>
 </html>
