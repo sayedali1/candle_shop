@@ -1,324 +1,1281 @@
 {
- "name": "two fluffy poodle puppies, one sitting on the other (sculpted wax)",
- "turn": -0.45,
- "size": 0.88,
+ "name": "two fluffy poodle puppies, one sitting on the other (sculpted wax, fine curls)",
+ "turn": -0.12,
+ "size": 0.78,
  "shadow": 1.9,
  "materials": {
   "coat": {
    "kind": "matte",
-   "color": "#cf9358",
-   "roughness": 0.9,
-   "sheen": 0.45,
-   "sheenColor": "#ffcf9a",
+   "color": "#e6b48a",
+   "roughness": 0.92,
+   "bump": 2.2,
+   "fur": true,
+   "sheen": 0.35,
+   "sheenColor": "#ffdcb8",
    "sheenRoughness": 0.6,
-   "bump": 0.5,
-   "glow": 0.14,
+   "glow": 0.16,
    "glowColor": "#ff9a50"
   },
-  "muzzle": {
+  "under": {
    "kind": "matte",
-   "color": "#e3b88a",
-   "roughness": 0.9,
-   "sheen": 0.45,
-   "sheenColor": "#ffcf9a",
+   "color": "#d6a077",
+   "roughness": 0.92,
+   "bump": 2.2,
+   "fur": true,
+   "sheen": 0.35,
+   "sheenColor": "#ffdcb8",
    "sheenRoughness": 0.6,
-   "bump": 0.3,
-   "glow": 0.14,
+   "glow": 0.16,
    "glowColor": "#ff9a50"
   },
   "ears": {
    "kind": "matte",
-   "color": "#c0824a",
-   "roughness": 0.9,
-   "sheen": 0.45,
-   "sheenColor": "#ffcf9a",
+   "color": "#dba57c",
+   "roughness": 0.92,
+   "bump": 2.2,
+   "fur": true,
+   "sheen": 0.35,
+   "sheenColor": "#ffdcb8",
    "sheenRoughness": 0.6,
-   "bump": 0.5,
-   "glow": 0.14,
+   "glow": 0.16,
+   "glowColor": "#ff9a50"
+  },
+  "earunder": {
+   "kind": "matte",
+   "color": "#c98f66",
+   "roughness": 0.92,
+   "bump": 2.2,
+   "fur": true,
+   "sheen": 0.35,
+   "sheenColor": "#ffdcb8",
+   "sheenRoughness": 0.6,
+   "glow": 0.16,
+   "glowColor": "#ff9a50"
+  },
+  "muzzle": {
+   "kind": "matte",
+   "color": "#f1cfae",
+   "roughness": 0.85,
+   "bump": 1.2,
+   "fur": true,
+   "sheen": 0.4,
+   "sheenColor": "#fff0dc",
+   "glow": 0.18,
    "glowColor": "#ff9a50"
   },
   "ink": {
    "kind": "solid",
-   "color": "#17100b",
-   "roughness": 0.28,
+   "color": "#100907",
+   "roughness": 0.2,
    "clearcoat": 1,
-   "clearcoatRoughness": 0.1
+   "clearcoatRoughness": 0.06
   }
  },
  "parts": [
   {
-   "shape": "capsule",
-   "material": "coat",
-   "r": 0.21,
-   "len": 0.4,
-   "pos": [
-    -0.12,
-    0.21,
-    0
-   ],
-   "rot": [
-    0,
-    0,
-    1.5708
-   ],
-   "fuzz": {
-    "amp": 0.03,
-    "freq": 20
-   }
-  },
-  {
    "shape": "sphere",
-   "material": "coat",
-   "r": 0.21,
+   "material": "under",
+   "r": 1,
+   "smooth": true,
    "pos": [
-    0.38,
-    0.37,
-    0
-   ],
-   "fuzz": {
-    "amp": 0.028,
-    "freq": 22
-   }
-  },
-  {
-   "shape": "sphere",
-   "material": "muzzle",
-   "r": 0.1,
-   "pos": [
-    0.55,
-    0.3,
-    0
-   ],
-   "scale": [
-    1.3,
-    0.9,
-    0.9
-   ],
-   "fuzz": {
-    "amp": 0.012,
-    "freq": 25
-   }
-  },
-  {
-   "shape": "capsule",
-   "material": "ears",
-   "r": 0.078,
-   "len": 0.17,
-   "pos": [
-    0.3,
-    0.25,
-    0.2
-   ],
-   "rot": [
-    0.3,
-    0,
-    0
-   ],
-   "mirror": {
-    "axis": "z",
-    "about": 0
-   },
-   "fuzz": {
-    "amp": 0.024,
-    "freq": 22
-   }
-  },
-  {
-   "shape": "capsule",
-   "material": "coat",
-   "r": 0.062,
-   "len": 0.2,
-   "pos": [
-    0.36,
-    0.07,
-    0.105
-   ],
-   "rot": [
-    0,
-    0,
-    1.5708
-   ],
-   "mirror": {
-    "axis": "z",
-    "about": 0
-   },
-   "fuzz": {
-    "amp": 0.016,
-    "freq": 26
-   }
-  },
-  {
-   "shape": "sphere",
-   "material": "coat",
-   "r": 0.15,
-   "pos": [
-    -0.4,
+    -0.02,
     0.16,
-    0.12
+    0.0
    ],
    "scale": [
-    1.1,
-    0.9,
-    0.8
-   ],
-   "mirror": {
-    "axis": "z",
-    "about": 0
-   },
-   "fuzz": {
-    "amp": 0.024,
-    "freq": 20
-   }
-  },
-  {
-   "shape": "sphere",
-   "material": "coat",
-   "r": 0.06,
-   "pos": [
-    -0.62,
-    0.27,
-    0
-   ],
-   "fuzz": {
-    "amp": 0.016,
-    "freq": 26
-   }
-  },
-  {
-   "shape": "capsule",
-   "material": "coat",
-   "r": 0.2,
-   "len": 0.06,
-   "pos": [
-    -0.1,
-    0.62,
-    0.02
+    0.3,
+    0.15,
+    0.165
    ],
    "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "shape": "curls",
+   "material": "coat",
+   "pos": [
+    -0.02,
+    0.16,
+    0.0
+   ],
+   "radii": [
+    0.3,
     0.15,
+    0.165
+   ],
+   "rot": [
+    0,
     0,
     0
    ],
-   "fuzz": {
-    "amp": 0.03,
-    "freq": 20
-   }
+   "n": 170,
+   "r": 0.03,
+   "seed": 11,
+   "minY": 0.02
   },
   {
    "shape": "sphere",
-   "material": "coat",
-   "r": 0.2,
+   "material": "under",
+   "r": 1,
+   "smooth": true,
    "pos": [
-    -0.1,
-    0.93,
-    0.07
-   ],
-   "fuzz": {
-    "amp": 0.028,
-    "freq": 22
-   }
-  },
-  {
-   "shape": "sphere",
-   "material": "muzzle",
-   "r": 0.095,
-   "pos": [
-    -0.1,
-    0.88,
-    0.235
+    -0.31,
+    0.17,
+    0.0
    ],
    "scale": [
-    1,
-    0.85,
-    1.1
+    0.17,
+    0.16,
+    0.17
    ],
-   "fuzz": {
-    "amp": 0.01,
-    "freq": 30
-   }
+   "rot": [
+    0,
+    0,
+    0
+   ]
   },
   {
-   "shape": "capsule",
-   "material": "ears",
-   "r": 0.07,
-   "len": 0.16,
+   "shape": "curls",
+   "material": "coat",
    "pos": [
-    0.115,
-    0.88,
+    -0.31,
+    0.17,
+    0.0
+   ],
+   "radii": [
+    0.17,
+    0.16,
+    0.17
+   ],
+   "rot": [
+    0,
+    0,
+    0
+   ],
+   "n": 116,
+   "r": 0.03,
+   "seed": 12,
+   "minY": 0.02
+  },
+  {
+   "shape": "sphere",
+   "material": "under",
+   "r": 1,
+   "smooth": true,
+   "pos": [
+    -0.27,
+    0.12,
+    0.125
+   ],
+   "scale": [
+    0.15,
+    0.12,
+    0.085
+   ],
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "shape": "curls",
+   "material": "coat",
+   "pos": [
+    -0.27,
+    0.12,
+    0.125
+   ],
+   "radii": [
+    0.15,
+    0.12,
+    0.085
+   ],
+   "rot": [
+    0,
+    0,
+    0
+   ],
+   "n": 58,
+   "r": 0.03,
+   "seed": 14,
+   "minY": 0.02
+  },
+  {
+   "shape": "sphere",
+   "material": "under",
+   "r": 1,
+   "smooth": true,
+   "pos": [
+    -0.1,
+    0.04,
+    0.15
+   ],
+   "scale": [
+    0.11,
+    0.045,
     0.06
    ],
    "rot": [
     0,
     0,
-    -0.25
-   ],
-   "mirror": {
-    "axis": "x",
-    "about": -0.1
-   },
-   "fuzz": {
-    "amp": 0.024,
-    "freq": 22
-   }
+    0
+   ]
   },
   {
-   "shape": "capsule",
+   "shape": "curls",
    "material": "coat",
-   "r": 0.055,
-   "len": 0.18,
    "pos": [
-    0.0,
-    0.44,
-    0.17
+    -0.1,
+    0.04,
+    0.15
+   ],
+   "radii": [
+    0.11,
+    0.045,
+    0.06
    ],
    "rot": [
-    1.45,
+    0,
     0,
     0
    ],
-   "mirror": {
-    "axis": "x",
-    "about": -0.1
-   },
-   "fuzz": {
-    "amp": 0.016,
-    "freq": 26
+   "n": 14,
+   "r": 0.03,
+   "seed": 16,
+   "minY": 0.02
+  },
+  {
+   "shape": "sphere",
+   "material": "under",
+   "r": 1,
+   "smooth": true,
+   "pos": [
+    -0.27,
+    0.12,
+    -0.125
+   ],
+   "scale": [
+    0.15,
+    0.12,
+    0.085
+   ],
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "shape": "curls",
+   "material": "coat",
+   "pos": [
+    -0.27,
+    0.12,
+    -0.125
+   ],
+   "radii": [
+    0.15,
+    0.12,
+    0.085
+   ],
+   "rot": [
+    0,
+    0,
+    0
+   ],
+   "n": 58,
+   "r": 0.03,
+   "seed": 12,
+   "minY": 0.02
+  },
+  {
+   "shape": "sphere",
+   "material": "under",
+   "r": 1,
+   "smooth": true,
+   "pos": [
+    -0.1,
+    0.04,
+    -0.15
+   ],
+   "scale": [
+    0.11,
+    0.045,
+    0.06
+   ],
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "shape": "curls",
+   "material": "coat",
+   "pos": [
+    -0.1,
+    0.04,
+    -0.15
+   ],
+   "radii": [
+    0.11,
+    0.045,
+    0.06
+   ],
+   "rot": [
+    0,
+    0,
+    0
+   ],
+   "n": 14,
+   "r": 0.03,
+   "seed": 14,
+   "minY": 0.02
+  },
+  {
+   "shape": "sphere",
+   "material": "under",
+   "r": 1,
+   "smooth": true,
+   "pos": [
+    -0.47,
+    0.21,
+    0.0
+   ],
+   "scale": [
+    0.05,
+    0.05,
+    0.05
+   ],
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "shape": "curls",
+   "material": "coat",
+   "pos": [
+    -0.47,
+    0.21,
+    0.0
+   ],
+   "radii": [
+    0.05,
+    0.05,
+    0.05
+   ],
+   "rot": [
+    0,
+    0,
+    0
+   ],
+   "n": 9,
+   "r": 0.03,
+   "seed": 17,
+   "minY": 0.02
+  },
+  {
+   "shape": "sphere",
+   "material": "under",
+   "r": 1,
+   "smooth": true,
+   "pos": [
+    0.16,
+    0.2,
+    0.0
+   ],
+   "scale": [
+    0.2,
+    0.18,
+    0.17
+   ],
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "shape": "curls",
+   "material": "coat",
+   "pos": [
+    0.16,
+    0.2,
+    0.0
+   ],
+   "radii": [
+    0.2,
+    0.18,
+    0.17
+   ],
+   "rot": [
+    0,
+    0,
+    0
+   ],
+   "n": 140,
+   "r": 0.03,
+   "seed": 18,
+   "minY": 0.02
+  },
+  {
+   "shape": "sphere",
+   "material": "under",
+   "r": 1,
+   "smooth": true,
+   "pos": [
+    0.37,
+    0.44,
+    0.06
+   ],
+   "scale": [
+    0.205,
+    0.2,
+    0.2
+   ],
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "shape": "curls",
+   "material": "coat",
+   "pos": [
+    0.37,
+    0.44,
+    0.06
+   ],
+   "radii": [
+    0.205,
+    0.2,
+    0.2
+   ],
+   "rot": [
+    0,
+    0,
+    0
+   ],
+   "n": 170,
+   "r": 0.03,
+   "seed": 19,
+   "minY": 0.02,
+   "hide": {
+    "dir": [
+     0.788,
+     0.0,
+     0.616
+    ],
+    "angle": 0.593
    }
+  },
+  {
+   "shape": "sphere",
+   "material": "muzzle",
+   "r": 1,
+   "smooth": true,
+   "pos": [
+    0.496,
+    0.375,
+    0.159
+   ],
+   "scale": [
+    0.1,
+    0.07,
+    0.085
+   ],
+   "rot": [
+    0,
+    -0.663,
+    0
+   ]
+  },
+  {
+   "shape": "sphere",
+   "material": "earunder",
+   "r": 1,
+   "smooth": true,
+   "pos": [
+    0.464,
+    0.38,
+    -0.086
+   ],
+   "scale": [
+    0.045,
+    0.15,
+    0.085
+   ],
+   "rot": [
+    0,
+    0.908,
+    0
+   ]
+  },
+  {
+   "shape": "curls",
+   "material": "ears",
+   "pos": [
+    0.464,
+    0.38,
+    -0.086
+   ],
+   "radii": [
+    0.045,
+    0.15,
+    0.085
+   ],
+   "rot": [
+    0,
+    0.908,
+    0
+   ],
+   "n": 45,
+   "r": 0.03,
+   "seed": 22,
+   "minY": 0.04
+  },
+  {
+   "shape": "sphere",
+   "material": "earunder",
+   "r": 1,
+   "smooth": true,
+   "pos": [
+    0.236,
+    0.38,
+    0.206
+   ],
+   "scale": [
+    0.045,
+    0.15,
+    0.085
+   ],
+   "rot": [
+    0,
+    0.908,
+    0
+   ]
+  },
+  {
+   "shape": "curls",
+   "material": "ears",
+   "pos": [
+    0.236,
+    0.38,
+    0.206
+   ],
+   "radii": [
+    0.045,
+    0.15,
+    0.085
+   ],
+   "rot": [
+    0,
+    0.908,
+    0
+   ],
+   "n": 45,
+   "r": 0.03,
+   "seed": 20,
+   "minY": 0.04
+  },
+  {
+   "shape": "sphere",
+   "material": "under",
+   "r": 1,
+   "smooth": true,
+   "pos": [
+    0.4,
+    0.07,
+    0.1
+   ],
+   "scale": [
+    0.15,
+    0.06,
+    0.06
+   ],
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "shape": "curls",
+   "material": "coat",
+   "pos": [
+    0.4,
+    0.07,
+    0.1
+   ],
+   "radii": [
+    0.15,
+    0.06,
+    0.06
+   ],
+   "rot": [
+    0,
+    0,
+    0
+   ],
+   "n": 25,
+   "r": 0.03,
+   "seed": 25,
+   "minY": 0.02
+  },
+  {
+   "shape": "sphere",
+   "material": "under",
+   "r": 1,
+   "smooth": true,
+   "pos": [
+    0.52,
+    0.05,
+    0.12
+   ],
+   "scale": [
+    0.065,
+    0.05,
+    0.055
+   ],
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "shape": "curls",
+   "material": "coat",
+   "pos": [
+    0.52,
+    0.05,
+    0.12
+   ],
+   "radii": [
+    0.065,
+    0.05,
+    0.055
+   ],
+   "rot": [
+    0,
+    0,
+    0
+   ],
+   "n": 10,
+   "r": 0.03,
+   "seed": 27,
+   "minY": 0.02
+  },
+  {
+   "shape": "sphere",
+   "material": "under",
+   "r": 1,
+   "smooth": true,
+   "pos": [
+    0.4,
+    0.07,
+    -0.1
+   ],
+   "scale": [
+    0.15,
+    0.06,
+    0.06
+   ],
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "shape": "curls",
+   "material": "coat",
+   "pos": [
+    0.4,
+    0.07,
+    -0.1
+   ],
+   "radii": [
+    0.15,
+    0.06,
+    0.06
+   ],
+   "rot": [
+    0,
+    0,
+    0
+   ],
+   "n": 25,
+   "r": 0.03,
+   "seed": 23,
+   "minY": 0.02
+  },
+  {
+   "shape": "sphere",
+   "material": "under",
+   "r": 1,
+   "smooth": true,
+   "pos": [
+    0.52,
+    0.05,
+    -0.12
+   ],
+   "scale": [
+    0.065,
+    0.05,
+    0.055
+   ],
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "shape": "curls",
+   "material": "coat",
+   "pos": [
+    0.52,
+    0.05,
+    -0.12
+   ],
+   "radii": [
+    0.065,
+    0.05,
+    0.055
+   ],
+   "rot": [
+    0,
+    0,
+    0
+   ],
+   "n": 10,
+   "r": 0.03,
+   "seed": 25,
+   "minY": 0.02
+  },
+  {
+   "shape": "sphere",
+   "material": "under",
+   "r": 1,
+   "smooth": true,
+   "pos": [
+    0.07,
+    0.66,
+    -0.06
+   ],
+   "scale": [
+    0.15,
+    0.22,
+    0.14
+   ],
+   "rot": [
+    0,
+    0,
+    -0.4
+   ]
+  },
+  {
+   "shape": "curls",
+   "material": "coat",
+   "pos": [
+    0.07,
+    0.66,
+    -0.06
+   ],
+   "radii": [
+    0.15,
+    0.22,
+    0.14
+   ],
+   "rot": [
+    0,
+    0,
+    -0.4
+   ],
+   "n": 119,
+   "r": 0.03,
+   "seed": 31,
+   "minY": 0.2
+  },
+  {
+   "shape": "sphere",
+   "material": "under",
+   "r": 1,
+   "smooth": true,
+   "pos": [
+    -0.14,
+    0.5,
+    0.04
+   ],
+   "scale": [
+    0.15,
+    0.13,
+    0.095
+   ],
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "shape": "curls",
+   "material": "coat",
+   "pos": [
+    -0.14,
+    0.5,
+    0.04
+   ],
+   "radii": [
+    0.15,
+    0.13,
+    0.095
+   ],
+   "rot": [
+    0,
+    0,
+    0
+   ],
+   "n": 65,
+   "r": 0.03,
+   "seed": 34,
+   "minY": 0.2
+  },
+  {
+   "shape": "sphere",
+   "material": "under",
+   "r": 1,
+   "smooth": true,
+   "pos": [
+    -0.14,
+    0.5,
+    -0.16
+   ],
+   "scale": [
+    0.15,
+    0.13,
+    0.095
+   ],
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "shape": "curls",
+   "material": "coat",
+   "pos": [
+    -0.14,
+    0.5,
+    -0.16
+   ],
+   "radii": [
+    0.15,
+    0.13,
+    0.095
+   ],
+   "rot": [
+    0,
+    0,
+    0
+   ],
+   "n": 65,
+   "r": 0.03,
+   "seed": 32,
+   "minY": 0.2
+  },
+  {
+   "shape": "sphere",
+   "material": "under",
+   "r": 1,
+   "smooth": true,
+   "pos": [
+    0.2,
+    0.99,
+    -0.03
+   ],
+   "scale": [
+    0.18,
+    0.17,
+    0.17
+   ],
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "shape": "curls",
+   "material": "coat",
+   "pos": [
+    0.2,
+    0.99,
+    -0.03
+   ],
+   "radii": [
+    0.18,
+    0.17,
+    0.17
+   ],
+   "rot": [
+    0,
+    0,
+    0
+   ],
+   "n": 125,
+   "r": 0.03,
+   "seed": 35,
+   "minY": 0.2,
+   "hide": {
+    "dir": [
+     0.309,
+     0.0,
+     0.951
+    ],
+    "angle": 0.593
+   }
+  },
+  {
+   "shape": "sphere",
+   "material": "under",
+   "r": 1,
+   "smooth": true,
+   "pos": [
+    0.2,
+    1.11,
+    -0.03
+   ],
+   "scale": [
+    0.13,
+    0.07,
+    0.13
+   ],
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "shape": "curls",
+   "material": "coat",
+   "pos": [
+    0.2,
+    1.11,
+    -0.03
+   ],
+   "radii": [
+    0.13,
+    0.07,
+    0.13
+   ],
+   "rot": [
+    0,
+    0,
+    0
+   ],
+   "n": 60,
+   "r": 0.03,
+   "seed": 36,
+   "minY": 0.2
+  },
+  {
+   "shape": "sphere",
+   "material": "muzzle",
+   "r": 1,
+   "smooth": true,
+   "pos": [
+    0.243,
+    0.935,
+    0.103
+   ],
+   "scale": [
+    0.075,
+    0.06,
+    0.09
+   ],
+   "rot": [
+    0,
+    0.314,
+    0
+   ]
+  },
+  {
+   "shape": "sphere",
+   "material": "earunder",
+   "r": 1,
+   "smooth": true,
+   "pos": [
+    0.357,
+    0.92,
+    -0.071
+   ],
+   "scale": [
+    0.045,
+    0.14,
+    0.08
+   ],
+   "rot": [
+    0,
+    0.314,
+    0
+   ]
+  },
+  {
+   "shape": "curls",
+   "material": "ears",
+   "pos": [
+    0.357,
+    0.92,
+    -0.071
+   ],
+   "radii": [
+    0.045,
+    0.14,
+    0.08
+   ],
+   "rot": [
+    0,
+    0.314,
+    0
+   ],
+   "n": 40,
+   "r": 0.03,
+   "seed": 39,
+   "minY": 0.3
+  },
+  {
+   "shape": "sphere",
+   "material": "earunder",
+   "r": 1,
+   "smooth": true,
+   "pos": [
+    0.043,
+    0.92,
+    0.031
+   ],
+   "scale": [
+    0.045,
+    0.14,
+    0.08
+   ],
+   "rot": [
+    0,
+    0.314,
+    0
+   ]
+  },
+  {
+   "shape": "curls",
+   "material": "ears",
+   "pos": [
+    0.043,
+    0.92,
+    0.031
+   ],
+   "radii": [
+    0.045,
+    0.14,
+    0.08
+   ],
+   "rot": [
+    0,
+    0.314,
+    0
+   ],
+   "n": 40,
+   "r": 0.03,
+   "seed": 37,
+   "minY": 0.3
+  },
+  {
+   "shape": "sphere",
+   "material": "under",
+   "r": 1,
+   "smooth": true,
+   "pos": [
+    0.34,
+    0.7,
+    0.04
+   ],
+   "scale": [
+    0.065,
+    0.075,
+    0.06
+   ],
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "shape": "curls",
+   "material": "coat",
+   "pos": [
+    0.34,
+    0.7,
+    0.04
+   ],
+   "radii": [
+    0.065,
+    0.075,
+    0.06
+   ],
+   "rot": [
+    0,
+    0,
+    0
+   ],
+   "n": 14,
+   "r": 0.03,
+   "seed": 41,
+   "minY": 0.2
+  },
+  {
+   "shape": "sphere",
+   "material": "under",
+   "r": 1,
+   "smooth": true,
+   "pos": [
+    0.22,
+    0.64,
+    0.1
+   ],
+   "scale": [
+    0.06,
+    0.07,
+    0.055
+   ],
+   "rot": [
+    0,
+    0,
+    0
+   ]
+  },
+  {
+   "shape": "curls",
+   "material": "coat",
+   "pos": [
+    0.22,
+    0.64,
+    0.1
+   ],
+   "radii": [
+    0.06,
+    0.07,
+    0.055
+   ],
+   "rot": [
+    0,
+    0,
+    0
+   ],
+   "n": 12,
+   "r": 0.03,
+   "seed": 42,
+   "minY": 0.2
+  },
+  {
+   "shape": "sphere",
+   "material": "under",
+   "r": 1,
+   "smooth": true,
+   "pos": [
+    0.27,
+    0.69,
+    0.03
+   ],
+   "scale": [
+    0.05,
+    0.1,
+    0.05
+   ],
+   "rot": [
+    0,
+    0,
+    -1.0
+   ]
+  },
+  {
+   "shape": "curls",
+   "material": "coat",
+   "pos": [
+    0.27,
+    0.69,
+    0.03
+   ],
+   "radii": [
+    0.05,
+    0.1,
+    0.05
+   ],
+   "rot": [
+    0,
+    0,
+    -1.0
+   ],
+   "n": 14,
+   "r": 0.03,
+   "seed": 43,
+   "minY": 0.2
+  },
+  {
+   "shape": "dots",
+   "material": "ink",
+   "r": 0.021,
+   "at": [
+    [
+     0.563,
+     0.49,
+     0.103
+    ],
+    [
+     0.458,
+     0.49,
+     0.237
+    ],
+    [
+     0.32,
+     1.035,
+     0.097
+    ],
+    [
+     0.177,
+     1.035,
+     0.143
+    ]
+   ]
   },
   {
    "shape": "dots",
    "material": "ink",
    "r": 0.03,
+   "scale": [
+    1.1,
+    0.8,
+    0.95
+   ],
    "at": [
     [
-     0.525,
-     0.44,
-     0.105
+     0.567,
+     0.4,
+     0.214
     ],
     [
-     0.525,
-     0.44,
-     -0.105
-    ],
-    [
-     0.69,
-     0.34,
-     0
-    ],
-    [
-     -0.185,
-     0.985,
-     0.24
-    ],
-    [
-     -0.015,
-     0.985,
-     0.24
-    ],
-    [
-     -0.1,
-     0.92,
-     0.34
+     0.266,
+     0.95,
+     0.174
     ]
    ]
   }
@@ -326,15 +1283,16 @@
  "wicks": [
   {
    "kind": "long",
-   "x": -0.1,
-   "base": 1.1,
-   "tip": 1.27,
+   "x": 0.2,
+   "z": -0.03,
+   "base": 1.13,
+   "tip": 1.29,
    "color": "#efe3cf",
-   "radius": 0.015
+   "radius": 0.014
   }
  ],
  "flame": {
-  "size": 0.9,
+  "size": 0.85,
   "width": 1.0
  },
  "custom": {
@@ -342,6 +1300,21 @@
    {
     "mat": "coat",
     "path": "color"
+   },
+   {
+    "mat": "under",
+    "path": "color",
+    "mul": 0.93
+   },
+   {
+    "mat": "ears",
+    "path": "color",
+    "mul": 0.95
+   },
+   {
+    "mat": "earunder",
+    "path": "color",
+    "mul": 0.88
    }
   ]
  }

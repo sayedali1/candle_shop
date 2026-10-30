@@ -25,7 +25,9 @@ export function customize(recipe, opts = {}) {
     const m = r.materials[t.mat]; if (!m) return;
     const path = t.path.split('.'); let o = m;
     for (let i = 0; i < path.length - 1; i++) o = o[path[i]];
-    o[path[path.length - 1]] = opts.color;
+    let col = opts.color;
+    if (t.mul) { const n = parseInt(col.slice(1), 16), k = t.mul, ch = v => Math.max(0, Math.min(255, Math.round(v * k))); col = '#' + [ch(n >> 16 & 255), ch(n >> 8 & 255), ch(n & 255)].map(v => v.toString(16).padStart(2, '0')).join(''); }
+    o[path[path.length - 1]] = col;
   });
   const name = (opts.name || '').trim();
   if (name && c.name) {
@@ -60,6 +62,24 @@ export function makeBuilder(THREE) {
     t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(3, 2);
     return t;
   })();
+  let furTex = null;
+  const getFur = () => furTex || (furTex = (() => {                 // thousands of tiny curls, drawn so the picture tiles without a seam
+    const t = canvasTexture(512, 512, (g, w, h) => {
+      g.fillStyle = '#808080'; g.fillRect(0, 0, w, h);
+      let seed = 7; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+      for (let i = 0; i < 2400; i++) {
+        const x = rnd() * w, y = rnd() * h, r = 5 + rnd() * 6, a = rnd() * 6;
+        for (const [ox, oy] of [[0, 0], [-w, 0], [w, 0], [0, -h], [0, h]]) {
+          const gr = g.createRadialGradient(x + ox, y + oy, 0, x + ox, y + oy, r);
+          gr.addColorStop(0, 'rgba(255,255,255,0.6)'); gr.addColorStop(0.6, 'rgba(255,255,255,0.2)'); gr.addColorStop(1, 'rgba(0,0,0,0)');
+          g.fillStyle = gr; g.beginPath(); g.arc(x + ox, y + oy, r, 0, 7); g.fill();
+          g.strokeStyle = 'rgba(0,0,0,0.4)'; g.lineWidth = 1.7; g.beginPath(); g.arc(x + ox, y + oy, r * 0.8, a, a + 3.6); g.stroke();      // the dark line of a curl
+        }
+      }
+    }, false);
+    t.wrapS = t.wrapT = THREE.RepeatWrapping; t.repeat.set(4, 3);
+    return t;
+  })());
   const poolTexture = canvasTexture(128, 128, (g) => {            // the soft contact shadow under every candle
     const r = g.createRadialGradient(64, 64, 0, 64, 64, 64);
     r.addColorStop(0, 'rgba(0,0,0,0.7)'); r.addColorStop(0.6, 'rgba(0,0,0,0.3)'); r.addColorStop(1, 'rgba(0,0,0,0)');
@@ -168,7 +188,7 @@ export function makeBuilder(THREE) {
     torus: (p) => new THREE.TorusGeometry(p.r, p.tube, 10, 64).rotateX(Math.PI / 2),
     capsule: (p) => p.fuzz ? fuzzGeo(capsuleLathe(p), p.fuzz) : new THREE.CapsuleGeometry(p.r, p.len, 8, 24),
     box: (p) => new THREE.BoxGeometry(...p.size),
-    sphere: (p) => p.fuzz ? fuzzGeo(new THREE.SphereGeometry(p.r, 72, 52), p.fuzz) : new THREE.IcosahedronGeometry(p.r, 2)
+    sphere: (p) => p.fuzz ? fuzzGeo(new THREE.SphereGeometry(p.r, 72, 52), p.fuzz) : p.smooth ? new THREE.SphereGeometry(p.r, 40, 28) : new THREE.IcosahedronGeometry(p.r, 2)
   };
 
   /* builds one candle from a recipe. Returns what the page needs to light it and dim it. */
@@ -186,7 +206,7 @@ export function makeBuilder(THREE) {
       const o = { color: color(d.texture ? '#ffffff' : d.color || '#ffffff'), roughness: Math.min(1, Math.max(0, d.roughness + (fin ? fin.rough : 0))), metalness: d.metalness || 0, envMapIntensity: d.env ?? (d.glass ? 1.8 : 0.3) };
       if (d.sheen) { o.sheen = d.sheen; o.sheenRoughness = d.sheenRoughness; o.sheenColor = color(d.sheenColor); }
       if (d.clearcoat || (fin && fin.coat)) { o.clearcoat = Math.max(d.clearcoat || 0, fin ? fin.coat : 0); o.clearcoatRoughness = d.clearcoatRoughness ?? 0.2; }
-      if (d.bump) { o.bumpMap = noise; o.bumpScale = d.bump; }
+      if (d.bump) { o.bumpMap = d.fur ? getFur() : noise; o.bumpScale = d.bump; }
       if (d.texture) {
         const tk = JSON.stringify(d.texture);
         if (fresh) { o.map = painters[d.texture.kind](d.texture); own.push(o.map); }
@@ -232,10 +252,30 @@ export function makeBuilder(THREE) {
           const d = new THREE.Mesh(new THREE.CapsuleGeometry(r, len, 4, 10), m);
           d.position.set(Math.cos(an) * (p.ring + r * 0.3), p.y - len / 2, Math.sin(an) * (p.ring + r * 0.3)); group.add(d);
         }
+      } else if (p.shape === 'curls') {                           // curly fur: "pos", "radii" [x,y,z], "rot", "n" tufts of size "r"; "hide": {dir, angle} leaves a bare patch (a face); "minY" skips what is under the table
+        if (!geoCache.has('curl')) geoCache.set('curl', new THREE.SphereGeometry(1, 6, 3));
+        const im = new THREE.InstancedMesh(geoCache.get('curl'), m, p.n), dummy = new THREE.Object3D(), col = new THREE.Color();
+        const cen = new THREE.Vector3(...p.pos), eul = new THREE.Euler(...(p.rot || [0, 0, 0])), hide = p.hide && { d: new THREE.Vector3(...p.hide.dir).normalize(), c: Math.cos(p.hide.angle) };
+        let seed = p.seed || 3; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
+        const golden = Math.PI * (3 - Math.sqrt(5)); let k = 0;
+        for (let i = 0; i < p.n; i++) {
+          const y = 1 - (i + 0.5) / p.n * 2, rr = Math.sqrt(Math.max(0, 1 - y * y)), th = golden * i + rnd() * 0.5;     // evenly spread over the surface, a little shaken
+          const u = new THREE.Vector3(Math.cos(th) * rr + (rnd() - 0.5) * 0.14, y + (rnd() - 0.5) * 0.14, Math.sin(th) * rr + (rnd() - 0.5) * 0.14).normalize();
+          const pt = new THREE.Vector3(u.x * p.radii[0], u.y * p.radii[1], u.z * p.radii[2]).applyEuler(eul).add(cen);
+          if (pt.y < (p.minY ?? -9)) continue;
+          if (hide && pt.clone().sub(cen).normalize().dot(hide.d) > hide.c) continue;
+          dummy.position.copy(pt); dummy.rotation.set(rnd() * 6, rnd() * 6, rnd() * 6);
+          const sz = p.r * (0.8 + 0.4 * rnd()); dummy.scale.set(sz, sz * (0.75 + 0.3 * rnd()), sz); dummy.updateMatrix();
+          im.setMatrixAt(k, dummy.matrix);
+          const shade = (0.9 + 0.2 * rnd()) * (u.y < -0.3 ? 0.78 : 1);        // each tuft a little lighter or darker, and darker underneath: depth
+          im.setColorAt(k, col.setRGB(shade, shade, shade)); k++;
+        }
+        im.count = k; im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true;
+        im.frustumCulled = false; group.add(im);
       } else if (p.shape === 'dots') {                            // small round things: eyes, a nose. "at": [[x,y,z],...], "r"
         const dk = 'dot' + p.r;
         if (!geoCache.has(dk)) geoCache.set(dk, new THREE.SphereGeometry(p.r, 16, 12));
-        p.at.forEach(([x, y, z]) => { const d = new THREE.Mesh(geoCache.get(dk), m); d.position.set(x, y, z); group.add(d); });
+        p.at.forEach(([x, y, z]) => { const d = new THREE.Mesh(geoCache.get(dk), m); d.position.set(x, y, z); if (p.scale) d.scale.set(...p.scale); group.add(d); });
       } else if (p.shape === 'stones') {                          // a ring of crystals around the wick
         p.colors.forEach((c, k) => {
           const sk = 'stone' + (p.size || 0.065);
@@ -262,7 +302,7 @@ export function makeBuilder(THREE) {
       const h = w.tip - w.base, mid = (w.tip + w.base) / 2;
       const wm = material(w.kind === 'wood' ? { kind: 'wood', color: w.color || '#b86a3a' } : { kind: 'solid', color: w.color || '#1c140e', roughness: 0.9 });
       const mesh = new THREE.Mesh(w.kind === 'wood' ? new THREE.BoxGeometry(w.width || 0.17, h, 0.022) : new THREE.CylinderGeometry(w.radius || 0.011, (w.radius || 0.011) * 1.2, h, 8), wm);
-      mesh.position.set(w.x || 0, mid, 0); if (w.tilt) mesh.rotation.z = w.tilt;
+      mesh.position.set(w.x || 0, mid, w.z || 0); if (w.tilt) mesh.rotation.z = w.tilt;
       group.add(mesh);
     });
 
@@ -273,7 +313,7 @@ export function makeBuilder(THREE) {
     const w0 = wicks[0] || { tip: 0.8, x: 0 };
     const fl = recipe.flame || {};
     const dispose = () => {                                      // frees the materials (and, for a fresh candle, its textures); the shared shapes stay
-      group.traverse(o => { if (o.material && o.material !== pool.material) o.material.dispose(); });
+      group.traverse(o => { if (o.isInstancedMesh) o.dispose(); if (o.material && o.material !== pool.material) o.material.dispose(); });
       pool.material.dispose(); own.forEach(t => t.dispose());
     };
     return { group, tints, glows, dispose, info: { wickY: w0.tip, flameX: w0.x || 0, fs: fl.size ?? 1, fw: fl.width ?? 1 }, turn: recipe.turn || 0, size: recipe.size || 1 };
