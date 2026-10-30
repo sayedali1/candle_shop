@@ -617,3 +617,9 @@ One entry per decision, newest at the bottom. The vision table is in `brief/visi
 - candle-builder.js: `customize(recipe, opts)` applies the choices to a copy; `build(recipe, true)` gives a candle with its own textures that `dispose()` frees (typing a name rebuilds the label). candle.js: `window.candlePreview` (config / show / set / hide) draws with a hidden renderer (on phones the same one as the shelf slots) and copies into the sheet's canvas at 30 fps.
 - The choices travel into the order: the same candle with the same choices is one line (quantity goes up), other choices are another line; the WhatsApp message lists them under each candle ("الخيارات: اللون: عسلي، الاسم على الملصق: ليلى، الحجم: كبير").
 - Not measured on a real phone yet.
+
+## 2026-10-30 — Boba Candels brand (her Instagram: @raniaelsoni)
+- The seller's brand is "Boba Candels" ("Handmade & Scented Candles"); her bio says handmade soy candles, a flowers box, baby shower and bridal favors, custom orders. Her logo and palette were given by the user: deep brown-red #591102, orange #f89724, red-orange #f05630.
+- The page now uses them: page background a very dark #591102 (#1a0602), orange for accents, the main buttons use an orange-to-red-orange gradient like the O of her logo; the 3D room backdrop moved to red-browns; her logo is in the header, on the jar's label in the hero (dark-ink version), and in the footer; title and share text say Boba Candels.
+- The logo was cut out of the screenshot the user sent (assets/brand/boba-*.png, with transparent background and dark-ink versions). It is her trademark: ask her OK before the page goes anywhere public, and ask her for the original vector file (SVG/AI/PDF) to replace these.
+- Still placeholders: all candle names and facts, prices (none by design), the WhatsApp number, photos (Unsplash), the headline.

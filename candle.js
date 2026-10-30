@@ -92,7 +92,7 @@ async function start() {
   /* ---------- the room: a dark warm backdrop, and a studio of soft lights that the glass reflects ---------- */
   scene.background = canvasTexture(512, 512, (g) => {
     const r = g.createRadialGradient(256, 330, 0, 256, 330, 420);
-    r.addColorStop(0, '#2e1a0a'); r.addColorStop(0.55, '#170f09'); r.addColorStop(1, '#0b0705');
+    r.addColorStop(0, '#4a1407'); r.addColorStop(0.55, '#230a04'); r.addColorStop(1, '#100302');
     g.fillStyle = r; g.fillRect(0, 0, 512, 512);
   });
 
@@ -149,15 +149,19 @@ async function start() {
 
   /* paper label on the front of the jar. The text is a placeholder. */
   await fontP;                                                     // (if the font is late the label simply uses a fallback font)
+  const logoImg = new Image(); logoImg.src = 'assets/brand/boba-logo-dark.png';               // her logo, dark ink for the paper label
+  await Promise.race([logoImg.decode().catch(() => {}), new Promise(r => setTimeout(r, 1500))]);
   const paintLabel = (paper, ink, ink2, name) => canvasTexture(1024, 512, (g, w, h) => {
     g.fillStyle = paper; g.fillRect(0, 0, w, h);
     for (let i = 0; i < 2600; i++) { g.fillStyle = `rgba(90,70,40,${Math.random() * 0.05})`; g.fillRect(Math.random() * w, Math.random() * h, 2, 2); }   // paper grain
     g.strokeStyle = ink2; g.lineWidth = 6; g.strokeRect(34, 34, w - 68, h - 68);
     g.globalAlpha = 0.5; g.lineWidth = 2; g.strokeRect(50, 50, w - 100, h - 100); g.globalAlpha = 1;
-    g.fillStyle = ink; g.textAlign = 'center'; g.direction = 'rtl';
-    g.font = '700 118px Cairo, Tahoma, sans-serif'; g.fillText('علامة تجريبية', w / 2, 235);
-    g.font = '600 56px Cairo, Tahoma, sans-serif'; g.fillStyle = ink2; g.fillText(name, w / 2, 330);
-    g.font = '400 36px Cairo, Tahoma, sans-serif'; g.fillText('نص تجريبي', w / 2, 404);
+    if (logoImg.naturalWidth) { const lh = 372, lw = lh * logoImg.naturalWidth / logoImg.naturalHeight; g.drawImage(logoImg, (w - lw) / 2, (h - lh) / 2, lw, lh); }   // her logo on the label
+    else {                                                           // the logo did not load: the old placeholder text
+      g.fillStyle = ink; g.textAlign = 'center'; g.direction = 'rtl';
+      g.font = '700 118px Cairo, Tahoma, sans-serif'; g.fillText('Boba Candels', w / 2, 235);
+      g.font = '600 56px Cairo, Tahoma, sans-serif'; g.fillStyle = ink2; g.fillText(name, w / 2, 330);
+    }
   });
   const labelMap = paintLabel('#eadfc8', '#2b1d0f', '#4a3520', 'شمعة يدوية');
   const labelArc = 1.7;
@@ -245,7 +249,7 @@ async function start() {
     scene.add(flameLight.target);
   }
   scene.add(flameLight);
-  scene.add(new THREE.HemisphereLight(0x6a5a4a, 0x120c08, 0.3));
+  scene.add(new THREE.HemisphereLight(0x6a5a4a, 0x1a0602, 0.3));
 
   const table = new THREE.Mesh(
     new THREE.CircleGeometry(5, 64),
@@ -435,7 +439,7 @@ async function start() {
   let slotsOn = lite && qs.get('slots') !== '0', sr = null, sScene = null, sCam = null;
   if (slotsOn) {                                                    // the hidden renderer itself is made later (initSlots): making it at the start made the first seconds heavier
     sScene = new THREE.Scene();
-    sScene.add(new THREE.HemisphereLight(0x6a5a4a, 0x120c08, 0.3));
+    sScene.add(new THREE.HemisphereLight(0x6a5a4a, 0x1a0602, 0.3));
     sCam = new THREE.PerspectiveCamera(30, 1, 0.1, 50); sCam.position.set(0, 0, SHELF_D);
   }
   const slotRatio = Math.min(devicePixelRatio || 1, 1.5);
@@ -867,7 +871,7 @@ shelf candles built ${shelfCandles.filter(Boolean).length} of ${shelfItems.lengt
       env = new THREE.PMREMGenerator(r).fromScene(studio, 0.02).texture;
     }
     const scene = new THREE.Scene(); scene.environment = env;
-    scene.add(new THREE.HemisphereLight(0x6a5a4a, 0x120c08, 0.3));
+    scene.add(new THREE.HemisphereLight(0x6a5a4a, 0x1a0602, 0.3));
     const cam = new THREE.PerspectiveCamera(30, 1, 0.1, 50); cam.position.set(0, 0.8, 3.8); cam.lookAt(0, 0.52, 0);
     const fh = new THREE.Mesh(flame.geometry, flameHaloMat), fo = new THREE.Mesh(flame.geometry, flameOuterMat), fc = new THREE.Mesh(flame.geometry, flameCoreMat);
     fh.renderOrder = 3; fo.renderOrder = 4; fc.renderOrder = 5;

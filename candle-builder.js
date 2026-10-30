@@ -32,7 +32,7 @@ export function customize(recipe, opts = {}) {
     if (c.name.kind === 'title') r.materials[c.name.mat].texture.title = name;
     else {
       const th = c.name.w / c.name.r;                                   // the label is wrapped around the front, as wide as asked
-      r.materials._label = { kind: 'paper', side: 'double', texture: { kind: 'label', title: name, sub: 'علامة تجريبية' } };
+      r.materials._label = { kind: 'paper', side: 'double', texture: { kind: 'label', title: name, sub: 'Boba Candels' } };
       r.parts.push({ shape: 'cylinder', material: '_label', r: c.name.r, h: c.name.w / 2, open: true, segments: 48, thetaStart: -th / 2, thetaLength: th, pos: [0, c.name.y, 0] });
     }
   }
