@@ -4,7 +4,7 @@
    DRAFT: shapes, colors and light are placeholders until the brand stage.
    Scrolling the hero turns the candle and moves the camera closer. */
 
-import { makeBuilder, customize } from './candle-builder.js?v=9';
+import { makeBuilder, customize } from './candle-builder.js?v=10';
 
 const hero = document.getElementById('hero');
 const stage = document.getElementById('stage');
@@ -427,6 +427,9 @@ async function start() {
      If the recipes cannot load, the shelf keeps the stand-in photos. */
   const builder = makeBuilder(THREE);
   const recipes = await recipesP;
+  if (recipes.some(r => r.model)) {                                // a candle made from a 3D file: only then the GLB loader is fetched
+    try { builder.setLoader((await import('three/addons/loaders/GLTFLoader.js')).GLTFLoader); } catch (e) { console.warn('GLB loader not loaded:', e); }
+  }
   await (window.shelvesReady || Promise.resolve());                // page.js builds the shelves from products.json; wait for it
   shelfEls = [...document.querySelectorAll('.shelf')];
   shelfItems = []; shelfOf = [];
@@ -451,6 +454,7 @@ async function start() {
     c.g = c.group; c.el = item.querySelector('.img'); c.lit = 0;    // the slot is the picture box of the item
     c.g.visible = false; (slotsOn ? sScene : shelfGroup).add(c.g);
     c.swayAmt = 0; c.dLit = 0; c.dSway = 0; c.hadFlame = false; c.dirty = true;   // what was last drawn into the slot
+    if (c.loaded) c.loaded.then(() => { c.dirty = true; });                         // a candle from a 3D file arrives a moment later: draw it again then
     return c;
   };
 

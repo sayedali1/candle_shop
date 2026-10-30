@@ -59,6 +59,7 @@
    "bump": 1.2,
    "fur": true,
    "sheen": 0.4,
+   "sheenRoughness": 0.6,
    "sheenColor": "#fff0dc",
    "glow": 0.18,
    "glowColor": "#ff9a50"

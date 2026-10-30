@@ -11,6 +11,7 @@ renderer.setPixelRatio(Math.min(devicePixelRatio || 1, 2));
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(30, 1, 0.1, 50);
 const builder = makeBuilder(THREE);
+try { builder.setLoader((await import('three/addons/loaders/GLTFLoader.js')).GLTFLoader); } catch (e) { /* no GLB loader: a recipe with a "model" shows nothing */ }   // for recipes with a "model" (a 3D file)
 
 /* the same studio of soft lights the page uses, so glass and glaze reflect what they will reflect on the page */
 const pmrem = new THREE.PMREMGenerator(renderer);

@@ -42,6 +42,7 @@ export function customize(recipe, opts = {}) {
 }
 
 export function makeBuilder(THREE) {
+  let GLTF = null;                                                 // the GLB loader, given by the page with setLoader (only pages that have a recipe with a "model" need it)
   const color = c => new THREE.Color(c);
   const geoCache = new Map(), texCache = new Map();                 // a shop has many candles but few recipes: they share geometry and textures (less memory, less building)
 
@@ -314,14 +315,34 @@ export function makeBuilder(THREE) {
 
     const w0 = wicks[0] || { tip: 0.8, x: 0 };
     const fl = recipe.flame || {};
+    /* a recipe with "model": "assets/models/x.glb" shows that 3D file: scaled to "modelHeight" (default 1) tall, standing on the table, centred.
+       It is lit, dimmed and warmed like every other candle. Its wick and flame still come from the recipe's "wicks" (heights in the same units). */
+    let loaded = null;
+    if (recipe.model && GLTF) {
+      loaded = new Promise(res => new GLTF().load(recipe.model, gltf => {
+        const m = gltf.scene, box = new THREE.Box3().setFromObject(m), size = box.getSize(new THREE.Vector3()), mid = box.getCenter(new THREE.Vector3());
+        const k = (recipe.modelHeight || 1) / size.y;
+        m.scale.setScalar(k); m.position.set(-mid.x * k, -box.min.y * k, -mid.z * k);
+        m.rotation.y = recipe.modelTurn || 0;
+        m.traverse(o => {
+          if (!o.isMesh || !o.material) return;
+          const mat = o.material; o.material = mat.isMeshStandardMaterial ? mat : new THREE.MeshStandardMaterial({ map: mat.map, color: mat.color });
+          const mm = o.material; mm.envMapIntensity = recipe.modelEnv ?? 0.3; mm.roughness = Math.max(mm.roughness ?? 0.8, recipe.modelRough ?? 0.7); mm.metalness = 0;
+          if (mm.color) tints.push({ m: mm, base: mm.color.clone() });
+          mm.emissive = new THREE.Color(recipe.modelGlowColor || '#ff9a50'); if (mm.map) mm.emissiveMap = mm.map; mm.emissiveIntensity = 0;
+          glows.push({ m: mm, k: recipe.modelGlow ?? 0.18 });
+        });
+        group.add(m); res(m);
+      }, undefined, e => { console.warn('model not loaded:', recipe.model, e); res(null); }));
+    }
     const dispose = () => {                                      // frees the materials (and, for a fresh candle, its textures); the shared shapes stay
       group.traverse(o => { if (o.isInstancedMesh) o.dispose(); if (o.material && o.material !== pool.material) o.material.dispose(); });
       pool.material.dispose(); own.forEach(t => t.dispose());
     };
-    return { group, tints, glows, dispose, info: { wickY: w0.tip, flameX: w0.x || 0, fs: fl.size ?? 1, fw: fl.width ?? 1 }, turn: recipe.turn || 0, size: recipe.size || 1 };
+    return { group, tints, glows, dispose, loaded, info: { wickY: w0.tip, flameX: w0.x || 0, fs: fl.size ?? 1, fw: fl.width ?? 1 }, turn: recipe.turn || 0, size: recipe.size || 1 };
   }
 
-  return { build, canvasTexture };
+  return { build, canvasTexture, setLoader: L => { GLTF = L; } };
 }
 
 /* the flame: an outer soft layer, a bright core and a faint halo, all swaying. Used by the Candle Lab; the page has its own copy in candle.js. */
