@@ -4,7 +4,7 @@
    DRAFT: shapes, colors and light are placeholders until the brand stage.
    Scrolling the hero turns the candle and moves the camera closer. */
 
-import { makeBuilder } from './candle-builder.js?v=3';
+import { makeBuilder, customize } from './candle-builder.js?v=5';
 
 const hero = document.getElementById('hero');
 const stage = document.getElementById('stage');
@@ -851,6 +851,84 @@ shelf candles built ${shelfCandles.filter(Boolean).length} of ${shelfItems.lengt
     setTimeout(() => idle(warm), slotsReady() ? 60 : 250);
   };
   if (qs.get('w') !== '0') setTimeout(() => idle(warm), slotsOn ? 4500 : 1500);    // after the hero has started (?w=0 turns the pre-build off, for measuring)
+
+  /* ---------- the live preview in the detail sheet ----------
+     The pressed candle, lit, drawn with the buyer's choices (colour, name on the label, size). It is drawn by a hidden renderer (on phones the
+     one the shelf slots already use) and copied into a small canvas of the sheet. page.js builds the controls and calls these. */
+  let pv = null;
+  const getPv = () => {
+    if (pv) return pv;
+    if (slotsOn) initSlots();
+    let r, env;
+    if (slotsOn && sr) { r = sr; env = sScene.environment; }
+    else {
+      r = new THREE.WebGLRenderer({ antialias: true, alpha: true, premultipliedAlpha: true });
+      r.toneMapping = THREE.ACESFilmicToneMapping; r.toneMappingExposure = 1.05; r.setPixelRatio(1);
+      env = new THREE.PMREMGenerator(r).fromScene(studio, 0.02).texture;
+    }
+    const scene = new THREE.Scene(); scene.environment = env;
+    scene.add(new THREE.HemisphereLight(0x6a5a4a, 0x120c08, 0.3));
+    const cam = new THREE.PerspectiveCamera(30, 1, 0.1, 50); cam.position.set(0, 0.8, 3.8); cam.lookAt(0, 0.52, 0);
+    const fh = new THREE.Mesh(flame.geometry, flameHaloMat), fo = new THREE.Mesh(flame.geometry, flameOuterMat), fc = new THREE.Mesh(flame.geometry, flameCoreMat);
+    fh.renderOrder = 3; fo.renderOrder = 4; fc.renderOrder = 5;
+    const fg = new THREE.Sprite(glow.material.clone()); fg.renderOrder = 5;
+    const fe = new THREE.Mesh(ember.geometry, ember.material);
+    const light = new THREE.PointLight(0xffa447, 0, 8, 2);
+    scene.add(fh, fo, fc, fg, fe, light);
+    return (pv = { r, scene, cam, fh, fo, fc, fg, fe, light });
+  };
+  const SIZES = { s: 0.8, m: 1, l: 1.2 };
+  const cp = { k: -1, canvas: null, ctx: null, opts: {}, c: null, raf: 0, last: 0, rot: 0, drag: null };
+  const dropPreviewCandle = () => { if (cp.c && pv) { pv.scene.remove(cp.c.group); cp.c.dispose(); } cp.c = null; };
+  const buildPreviewCandle = () => {
+    const p = getPv(); dropPreviewCandle();
+    cp.c = builder.build(customize(recipes[cp.k % recipes.length], cp.opts), true);       // fresh: its textures are freed when the buyer changes the choice
+    p.scene.add(cp.c.group);
+  };
+  const drawPreview = ts => {
+    cp.raf = requestAnimationFrame(drawPreview);
+    if (ts - cp.last < 32) return; cp.last = ts;                                 // 30 pictures a second are enough
+    const p = pv, c = cp.c; if (!p || !c || !cp.canvas.isConnected) return;
+    const W = cp.canvas.width, H = cp.canvas.height; if (!W || !H) return;
+    if (p.r.domElement.width !== W || p.r.domElement.height !== H) { p.r.setSize(W, H, false); p.cam.aspect = W / H; p.cam.updateProjectionMatrix(); }
+    const t = clock.elapsedTime, flick = reduce ? 0 : Math.sin(t * 9) * 0.05 + Math.sin(t * 23.7) * 0.03 + Math.sin(t * 37) * 0.02;
+    const sc = (SIZES[cp.opts.size] || 1) * c.size;
+    c.group.scale.setScalar(sc);
+    c.group.rotation.y = c.turn + cp.rot + (reduce || cp.drag ? 0 : Math.sin(t * 0.5) * 0.35);
+    c.glows.forEach(({ m, k }) => { m.emissiveIntensity = k * (1 + flick * 1.6); });
+    const fx = (c.info.flameX || 0) * sc, fy = c.info.wickY * sc, fs = c.info.fs, fw = c.info.fw;
+    p.fh.position.set(fx, fy - 0.005 * sc, 0); p.fo.position.copy(p.fh.position); p.fc.position.copy(p.fh.position);
+    p.fo.scale.set(0.9 * sc * fs * fw, 0.9 * sc * fs * (1 + flick * 0.5), 0.9 * sc * fs);
+    p.fc.scale.set(0.5 * sc * fs * fw, 0.5 * sc * fs * (1 + flick * 0.6), 0.5 * sc * fs);
+    p.fh.scale.set(1.5 * sc * fs * fw, 1.15 * sc * fs * (1 + flick * 0.4), 1.5 * sc * fs);
+    p.fg.position.set(fx, fy + 0.12 * sc, 0); p.fg.scale.setScalar(1.05 * sc * fs); p.fg.material.opacity = (0.9 + flick);
+    p.fe.position.set(fx + 0.0055 * sc, fy, 0); p.fe.scale.setScalar(sc);
+    p.light.position.set(fx, fy + 0.4 * sc, 0.3 * sc); p.light.intensity = FLAME_LIGHT * (1 + flick * 1.2);
+    p.r.render(p.scene, p.cam);
+    cp.ctx.clearRect(0, 0, W, H); cp.ctx.drawImage(p.r.domElement, 0, 0);
+  };
+  window.candlePreview = {
+    config(k) {                                                                  // what this candle lets the buyer change (null: not ready, or nothing)
+      if (!recipes.length) return null;
+      const cu = recipes[k % recipes.length].custom || {};
+      return { color: !!cu.color, name: !!cu.name };
+    },
+    show(k, canvas) {
+      this.hide();
+      cp.k = k; cp.canvas = canvas; cp.ctx = canvas.getContext('2d'); cp.opts = {}; cp.rot = 0;
+      const box = canvas.getBoundingClientRect(), ratio = Math.min(devicePixelRatio || 1, 1.5);
+      canvas.width = Math.round(box.width * ratio); canvas.height = Math.round(box.height * ratio);
+      let lastX = 0;                                                             // drag sideways to turn the candle
+      canvas.onpointerdown = e => { cp.drag = true; lastX = e.clientX; canvas.setPointerCapture(e.pointerId); };
+      canvas.onpointermove = e => { if (cp.drag) { cp.rot += (e.clientX - lastX) * 0.012; lastX = e.clientX; } };
+      canvas.onpointerup = canvas.onpointercancel = () => { cp.drag = null; };
+      buildPreviewCandle();
+      cp.raf = requestAnimationFrame(drawPreview);
+    },
+    set(opts) { if (cp.canvas) { cp.opts = { ...opts }; buildPreviewCandle(); } },   // the buyer changed a choice: build the candle again
+    hide() { cancelAnimationFrame(cp.raf); dropPreviewCandle(); if (cp.canvas) { cp.canvas.onpointerdown = cp.canvas.onpointermove = cp.canvas.onpointerup = cp.canvas.onpointercancel = null; } cp.canvas = null; }
+  };
+
   frame();
 }
 

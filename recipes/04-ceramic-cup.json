@@ -97,5 +97,13 @@
  "flame": {
   "size": 0.95,
   "width": 1.7
+ },
+ "custom": {
+  "name": {
+   "kind": "label",
+   "r": 0.49,
+   "y": 0.4,
+   "w": 0.5
+  }
  }
 }

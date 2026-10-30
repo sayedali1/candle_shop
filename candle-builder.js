@@ -14,6 +14,31 @@ const KINDS = {                                                   // what each m
 };
 const FINISH = { matte: { rough: 0.3, coat: 0 }, satin: { rough: 0, coat: 0 }, glossy: { rough: -0.22, coat: 0.5 } };   // "finish" nudges roughness and clear coat
 
+/* What the buyer can change, from the recipe's own "custom" block (nothing is invented here: a recipe without it is not customizable):
+     "color": [{ "mat": "<material>", "path": "color" }]  the main colour, set on those materials
+     "name":  { "kind": "label", "r": radius, "y": height, "w": width }  a paper label wrapped on the front, with the name on it
+              { "kind": "title", "mat": "<material>" }                   or the title of a label the candle already has
+   Returns a changed copy. opts: { color: '#rrggbb', name: 'text' } */
+export function customize(recipe, opts = {}) {
+  const r = JSON.parse(JSON.stringify(recipe)), c = r.custom || {};
+  if (opts.color && c.color) c.color.forEach(t => {
+    const m = r.materials[t.mat]; if (!m) return;
+    const path = t.path.split('.'); let o = m;
+    for (let i = 0; i < path.length - 1; i++) o = o[path[i]];
+    o[path[path.length - 1]] = opts.color;
+  });
+  const name = (opts.name || '').trim();
+  if (name && c.name) {
+    if (c.name.kind === 'title') r.materials[c.name.mat].texture.title = name;
+    else {
+      const th = c.name.w / c.name.r;                                   // the label is wrapped around the front, as wide as asked
+      r.materials._label = { kind: 'paper', side: 'double', texture: { kind: 'label', title: name, sub: 'علامة تجريبية' } };
+      r.parts.push({ shape: 'cylinder', material: '_label', r: c.name.r, h: c.name.w / 2, open: true, segments: 48, thetaStart: -th / 2, thetaLength: th, pos: [0, c.name.y, 0] });
+    }
+  }
+  return r;
+}
+
 export function makeBuilder(THREE) {
   const color = c => new THREE.Color(c);
   const geoCache = new Map(), texCache = new Map();                 // a shop has many candles but few recipes: they share geometry and textures (less memory, less building)
@@ -73,7 +98,9 @@ export function makeBuilder(THREE) {
       g.fillStyle = t.panel || '#f3e8d2'; rr(px, py, pw, ph, 30); g.fill();
       g.strokeStyle = t.line || '#a8483a'; g.lineWidth = 5; rr(px + 14, py + 14, pw - 28, ph - 28, 20); g.stroke();
       g.fillStyle = '#3a2a17'; g.textAlign = 'center'; g.direction = 'rtl';
-      g.font = '700 84px Cairo, Tahoma, sans-serif'; g.fillText(t.title || 'علامة تجريبية', w / 2, py + 108);
+      let fs = 84; g.font = `700 ${fs}px Cairo, Tahoma, sans-serif`;
+      while (g.measureText(t.title || 'علامة تجريبية').width > pw - 90 && fs > 36) { fs -= 4; g.font = `700 ${fs}px Cairo, Tahoma, sans-serif`; }   // a long name shrinks to fit the panel
+      g.fillText(t.title || 'علامة تجريبية', w / 2, py + 108);
       g.fillStyle = '#5a4128'; g.font = '500 40px Cairo, Tahoma, sans-serif'; g.fillText(t.sub || 'نص تجريبي', w / 2, py + 178);
     }),
     /* a paper label with a border, for jars */
@@ -84,7 +111,9 @@ export function makeBuilder(THREE) {
       g.strokeStyle = ink; g.lineWidth = 6; g.strokeRect(34, 34, w - 68, h - 68);
       g.globalAlpha = 0.5; g.lineWidth = 2; g.strokeRect(50, 50, w - 100, h - 100); g.globalAlpha = 1;
       g.fillStyle = ink; g.textAlign = 'center'; g.direction = 'rtl';
-      g.font = '700 118px Cairo, Tahoma, sans-serif'; g.fillText(t.title || 'علامة تجريبية', w / 2, 235);
+      let fs = 160; g.font = `700 ${fs}px Cairo, Tahoma, sans-serif`;
+      while (g.measureText(t.title || 'علامة تجريبية').width > w - 170 && fs > 44) { fs -= 6; g.font = `700 ${fs}px Cairo, Tahoma, sans-serif`; }   // a long name shrinks to fit the label
+      g.fillText(t.title || 'علامة تجريبية', w / 2, 235);
       g.font = '600 56px Cairo, Tahoma, sans-serif'; g.fillText(t.sub || 'شمعة يدوية', w / 2, 330);
     })
   };
@@ -112,8 +141,8 @@ export function makeBuilder(THREE) {
   };
 
   /* builds one candle from a recipe. Returns what the page needs to light it and dim it. */
-  function build(recipe) {
-    const group = new THREE.Group(), tints = [], glows = [], cache = {};
+  function build(recipe, fresh = false) {
+    const group = new THREE.Group(), tints = [], glows = [], cache = {}, own = [];   // fresh: its textures are its own (not shared), so dispose() can free them
 
     const material = (ref) => {
       const key = typeof ref === 'string' ? ref : null;
@@ -129,8 +158,11 @@ export function makeBuilder(THREE) {
       if (d.bump) { o.bumpMap = noise; o.bumpScale = d.bump; }
       if (d.texture) {
         const tk = JSON.stringify(d.texture);
-        if (!texCache.has(tk)) texCache.set(tk, painters[d.texture.kind](d.texture));
-        o.map = texCache.get(tk);
+        if (fresh) { o.map = painters[d.texture.kind](d.texture); own.push(o.map); }
+        else {
+          if (!texCache.has(tk)) texCache.set(tk, painters[d.texture.kind](d.texture));
+          o.map = texCache.get(tk);
+        }
       }
       if (d.glass) { o.transparent = true; o.opacity = d.opacity; o.depthWrite = false; }
       o.side = d.side === 'back' ? THREE.BackSide : (d.glass || d.side === 'double') ? THREE.DoubleSide : THREE.FrontSide;
@@ -199,7 +231,11 @@ export function makeBuilder(THREE) {
 
     const w0 = wicks[0] || { tip: 0.8, x: 0 };
     const fl = recipe.flame || {};
-    return { group, tints, glows, info: { wickY: w0.tip, flameX: w0.x || 0, fs: fl.size ?? 1, fw: fl.width ?? 1 }, turn: recipe.turn || 0, size: recipe.size || 1 };
+    const dispose = () => {                                      // frees the materials (and, for a fresh candle, its textures); the shared shapes stay
+      group.traverse(o => { if (o.material && o.material !== pool.material) o.material.dispose(); });
+      pool.material.dispose(); own.forEach(t => t.dispose());
+    };
+    return { group, tints, glows, dispose, info: { wickY: w0.tip, flameX: w0.x || 0, fs: fl.size ?? 1, fw: fl.width ?? 1 }, turn: recipe.turn || 0, size: recipe.size || 1 };
   }
 
   return { build, canvasTexture };

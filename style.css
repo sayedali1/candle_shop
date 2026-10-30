@@ -471,3 +471,22 @@ button.btn{border:0;font-family:inherit;cursor:pointer}
 .oi-remove:hover,.oi-clear:hover{color:var(--text)}
 #orderSend[aria-disabled="true"]{opacity:.4;pointer-events:none}
 @media (max-width:860px){.order{max-height:84vh}}   /* the order list can be long: more room than the detail sheet */
+
+/* ---------- the choices + live preview in the detail sheet ---------- */
+.custom{display:grid;gap:.9rem;padding:1.1rem 1.5rem 1.3rem;border-bottom:1px solid rgba(245,233,214,.1);background:rgba(245,233,214,.03)}
+.custom .kick{display:flex;align-items:center;justify-content:space-between;gap:.6rem}
+.custom h4{margin:0;font-size:1.15rem}
+.cv-wrap{border-radius:16px;background:radial-gradient(ellipse at 50% 70%,rgba(120,70,25,.32),rgba(12,8,5,.9) 72%);overflow:hidden}
+.cv{display:block;width:100%;aspect-ratio:4/3;touch-action:pan-y;cursor:grab}
+.opt{margin:0;padding:0;border:0;display:grid;gap:.4rem;color:var(--muted);font-size:.9rem}
+.opt legend{padding:0;margin-bottom:.4rem}
+.opt input{width:100%;font:inherit;font-size:1rem;color:var(--text);background:rgba(10,6,4,.6);border:1px solid rgba(245,233,214,.18);border-radius:12px;padding:.6rem .8rem}
+.swatches,.sizes{display:flex;flex-wrap:wrap;gap:.5rem}
+.sw{position:relative;width:44px;height:44px;border-radius:50%;border:0;background:none;cursor:pointer;padding:0}
+.sw::before{content:"";position:absolute;inset:7px;border-radius:50%;background:var(--c);border:1px solid rgba(245,233,214,.35)}
+.sw.orig::before{background:repeating-linear-gradient(45deg,rgba(245,233,214,.25) 0 3px,transparent 3px 6px)}
+.sw[aria-pressed="true"]::after{content:"";position:absolute;inset:2px;border-radius:50%;border:2px solid var(--amber)}
+.sizes button{min-height:44px;padding:0 1rem;border-radius:999px;border:1px solid rgba(245,233,214,.22);background:transparent;color:var(--text);font:inherit;cursor:pointer}
+.sizes button[aria-pressed="true"]{background:var(--amber);color:var(--on-amber);border-color:var(--amber);font-weight:700}
+.oi-opts{margin:0;color:var(--amber);font-size:.9rem}
+@media (max-width:860px){.detail{max-height:88vh}.cv{max-height:34vh}}   /* on a phone the sheet is taller and the preview shorter, so the choices below it show without scrolling far */

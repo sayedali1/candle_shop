@@ -197,11 +197,38 @@ window.shelvesReady = (async () => {
     wax: '<svg viewBox="0 0 24 24"><path d="M12 3c3 4 6 7 6 10a6 6 0 0 1-12 0c0-3 3-6 6-10z"/></svg>',
     wick: '<svg viewBox="0 0 24 24"><path d="M12 3c1 3.5 4.5 5.5 4.5 9.5a4.5 4.5 0 0 1-9 0c0-2 1-3.2 2.2-4.2.1 2 1 2.6 2 2.6-.4-3.2-.6-5 .3-7.9z"/></svg>'
   };
+  /* The choices next to the details. The colours are SAMPLE ones (marked as test); the real ones come from the seller. Each candle shows only
+     what its recipe allows (recipes/*.json "custom"). The live 3D preview is drawn by candle.js (window.candlePreview). */
+  const PALETTE = [['', 'الأصلي'], ['#f1e6cf', 'كريمي'], ['#e0ab1c', 'عسلي'], ['#e2a99b', 'وردي'], ['#a9b89a', 'أخضر مريمي'], ['#3a3330', 'أسود']];
+  const SIZES = [['s', 'صغير'], ['m', 'متوسط'], ['l', 'كبير']];
+  let opts = {};
+  const cleanOpts = o => { const r = {}; if (o.color) { r.color = o.color; r.cname = o.cname; } if (o.name && o.name.trim()) r.name = o.name.trim(); if (o.size && o.size !== 'm') r.size = o.size; return r; };
+  window.detailOpts = () => cleanOpts(opts);                         // the order basket reads the choices from here
+  const customHtml = cfg => `<section class="custom"><div class="kick"><h4>خصّص شمعتك</h4><span class="tag">خيارات تجريبية</span></div>
+      <div class="cv-wrap"><canvas id="cvPreview" class="cv" role="img" aria-label="معاينة ثلاثية الأبعاد للشمعة بالخيارات التي اخترتها. اسحب جانبيًا لتدويرها"></canvas></div>
+      ${cfg.color ? `<fieldset class="opt"><legend>اللون</legend><div class="swatches">${PALETTE.map(([col, n], i) => `<button type="button" class="sw${col ? '' : ' orig'}" data-color="${col}" data-cname="${n}" aria-pressed="${i === 0}" aria-label="${n}" title="${n}" style="--c:${col || 'transparent'}"></button>`).join('')}</div></fieldset>` : ''}
+      ${cfg.name ? `<label class="opt">الاسم على الملصق<input id="optName" type="text" maxlength="14" placeholder="مثلًا: ليلى" autocomplete="off"></label>` : ''}
+      <fieldset class="opt"><legend>الحجم</legend><div class="sizes">${SIZES.map(([v, n]) => `<button type="button" data-size="${v}" aria-pressed="${v === 'm'}">${n}</button>`).join('')}</div></fieldset>
+    </section>`;
+  const wireCustom = (k, cfg) => {
+    opts = {};
+    const cv = document.getElementById('cvPreview'), cp = window.candlePreview;
+    if (!cfg || !cv || !cp) return;
+    opts = { size: 'm' };
+    cp.show(k, cv);
+    const apply = () => cp.set(opts);
+    const pick = (sel, onPick) => body.querySelectorAll(sel).forEach(b => b.addEventListener('click', () => { body.querySelectorAll(sel).forEach(x => x.setAttribute('aria-pressed', String(x === b))); onPick(b); apply(); }));
+    pick('.sw', b => { opts.color = b.dataset.color; opts.cname = b.dataset.cname; });
+    pick('[data-size]', b => { opts.size = b.dataset.size; });
+    const nm = document.getElementById('optName');
+    if (nm) { let tm; nm.addEventListener('input', () => { clearTimeout(tm); tm = setTimeout(() => { opts.name = nm.value; apply(); }, 250); }); }   // the label is drawn again a moment after typing stops
+  };
   const render = k => {
     const p = data.items[k % data.items.length], c = data.common;
+    const cfg = window.candlePreview ? window.candlePreview.config(k) : null, custom = cfg ? customHtml(cfg) : '';
     const shot = p.photo ? `<figure class="shot"><img src="${esc(p.photo.src)}" alt="" style="object-position:${esc(p.photo.pos)}" decoding="async">
         <figcaption><span class="tag">صورة تجريبية</span><span>${esc(p.photo.credit)} · Unsplash</span></figcaption></figure>` : '';
-    body.innerHTML = shot + `<div class="detail-in">
+    body.innerHTML = custom + shot + `<div class="detail-in">
       <div><div class="kick"><span class="tag">نص تجريبي</span></div><h3 id="detailName">${esc(items[k].querySelector('h3').textContent)}</h3><p class="lead">${esc(p.scent)}</p></div>
       <dl class="facts">
         <div>${icons.size}<dt>الحجم</dt><dd>${esc(p.size)}</dd></div><div>${icons.burn}<dt>مدة الاحتراق</dt><dd>${esc(p.burn)}</dd></div>
@@ -222,6 +249,7 @@ window.shelvesReady = (async () => {
     panel.classList.toggle('has-shot', !!p.photo);
     document.getElementById('detailOrder').dataset.k = k;             // the order basket (below) adds this candle when the button is pressed
     body.scrollTop = 0;
+    wireCustom(k, cfg);
   };
   const open = k => {
     current = k; render(k); opener = document.activeElement;
@@ -236,7 +264,7 @@ window.shelvesReady = (async () => {
     panel.classList.remove('open'); scrim.classList.remove('open'); panel.setAttribute('aria-hidden', 'true');
     setTimeout(() => { scrim.hidden = true; }, 350); setInert(false);
     if (opener && opener.focus) opener.focus({ preventScroll: true });
-    current = -1;
+    current = -1; if (window.candlePreview) window.candlePreview.hide();
   };
   items.forEach((el, k) => {
     const d = el.querySelector('[data-detail]');                     // only the static shelf has its own details button
@@ -258,10 +286,12 @@ window.shelvesReady = (async () => {
   const WA = 'https://wa.me/0000000000', KEY = 'candle-order', MAXQ = 20;     // the same test number as every other order button
   const items = [...document.querySelectorAll('.shelf-item')];
   const nameOf = k => items[k].dataset.name;
+  const tidyOpts = o => { const r = {}; if (o && typeof o === 'object') { if (o.color) { r.color = String(o.color).slice(0, 9); r.cname = String(o.cname || '').slice(0, 30); } if (o.name) r.name = String(o.name).slice(0, 14); if (o.size === 's' || o.size === 'l') r.size = o.size; } return r; };
+  const optsText = o => [o.color ? `اللون: ${o.cname || o.color}` : '', o.name ? `الاسم على الملصق: ${o.name}` : '', o.size ? `الحجم: ${o.size === 's' ? 'صغير' : 'كبير'}` : ''].filter(Boolean).join('، ');
   let st = { items: [], general: '', name: '' };
   try {
     const s = JSON.parse(localStorage.getItem(KEY) || 'null');
-    if (s && Array.isArray(s.items)) st = { items: s.items.filter(x => Number.isInteger(x.k) && x.k >= 0 && x.k < items.length).map(x => ({ k: x.k, qty: Math.min(Math.max(+x.qty || 1, 1), MAXQ), note: String(x.note || '') })), general: String(s.general || ''), name: String(s.name || '') };
+    if (s && Array.isArray(s.items)) st = { items: s.items.filter(x => Number.isInteger(x.k) && x.k >= 0 && x.k < items.length).map(x => ({ k: x.k, qty: Math.min(Math.max(+x.qty || 1, 1), MAXQ), note: String(x.note || ''), opts: tidyOpts(x.opts) })), general: String(s.general || ''), name: String(s.name || '') };
   } catch (e) { /* no saved basket */ }
   const save = () => { try { localStorage.setItem(KEY, JSON.stringify(st)); } catch (e) { /* private window: the basket just lives until reload */ } };
   const total = () => st.items.reduce((n, x) => n + x.qty, 0);
@@ -273,7 +303,7 @@ window.shelvesReady = (async () => {
   /* the message the seller receives */
   const message = () => {
     const lines = ['مرحبًا، أريد أن أطلب:'];
-    st.items.forEach((x, i) => lines.push(`${arDigits(i + 1)}) ${nameOf(x.k)} × ${arDigits(x.qty)}` + (x.note.trim() ? `\n   ملاحظة: ${x.note.trim()}` : '')));
+    st.items.forEach((x, i) => lines.push(`${arDigits(i + 1)}) ${nameOf(x.k)} × ${arDigits(x.qty)}` + (optsText(x.opts) ? `\n   الخيارات: ${optsText(x.opts)}` : '') + (x.note.trim() ? `\n   ملاحظة: ${x.note.trim()}` : '')));
     if (st.general.trim()) lines.push('', 'ملاحظات عامة: ' + st.general.trim());
     if (st.name.trim()) lines.push('', 'الاسم: ' + st.name.trim());
     return lines.join('\n');
@@ -286,12 +316,13 @@ window.shelvesReady = (async () => {
   };
   send.addEventListener('click', e => { if (send.getAttribute('aria-disabled') === 'true') e.preventDefault(); });
 
-  const add = k => {
-    const x = st.items.find(i => i.k === k);
-    if (x) x.qty = Math.min(x.qty + 1, MAXQ); else st.items.push({ k, qty: 1, note: '' });
+  const add = (k, o = {}) => {
+    o = tidyOpts(o);
+    const x = st.items.find(i => i.k === k && JSON.stringify(i.opts) === JSON.stringify(o));      // the same candle with the same choices is one line; other choices are another line
+    if (x) x.qty = Math.min(x.qty + 1, MAXQ); else st.items.push({ k, qty: 1, note: '', opts: o });
     save(); refresh();
     btn.classList.remove('bump'); void btn.offsetWidth; btn.classList.add('bump');
-    const q = st.items.find(i => i.k === k).qty;
+    const q = (x || st.items[st.items.length - 1]).qty;
     say.textContent = `أُضيفت ${nameOf(k)} إلى الطلب، الكمية ${arDigits(q)}`;
     return q;
   };
@@ -302,7 +333,7 @@ window.shelvesReady = (async () => {
   };
   pickBar.querySelector('[data-pick-add]').addEventListener('click', e => { const k = items.indexOf(focusItem); if (k >= 0) flash(e.currentTarget, add(k)); });
   const dOrder = document.getElementById('detailOrder');
-  dOrder.addEventListener('click', () => { const k = Number(dOrder.dataset.k); if (Number.isInteger(k) && k >= 0) flash(dOrder, add(k)); });
+  dOrder.addEventListener('click', () => { const k = Number(dOrder.dataset.k); if (Number.isInteger(k) && k >= 0) flash(dOrder, add(k, window.detailOpts ? window.detailOpts() : {})); });
 
   /* the order panel */
   let opener = null, isOpen = false;
@@ -314,9 +345,10 @@ window.shelvesReady = (async () => {
     }
     body.innerHTML = `<div class="order-in"><div><h3 id="orderTitle">طلبك</h3>
       <p class="lead">راجع شمعاتك وأضف ما تريد من ملاحظات، ثم أرسل الطلب. السعر وما يمكن تنفيذه يؤكدهما لك البائع على واتساب.</p></div>
-      <ul class="order-list">${st.items.map(x => `<li class="oi" data-k="${x.k}">
+      <ul class="order-list">${st.items.map(x => `<li class="oi" data-i="${st.items.indexOf(x)}">
         <div class="oi-head"><b>${esc(nameOf(x.k))}</b>
           <div class="qty" role="group" aria-label="الكمية"><button type="button" data-q="-1" aria-label="أنقص الكمية">−</button><output aria-live="polite">${arDigits(x.qty)}</output><button type="button" data-q="1" aria-label="زِد الكمية">+</button></div></div>
+        ${optsText(x.opts) ? `<p class="oi-opts">${esc(optsText(x.opts))}</p>` : ''}
         <label>ملاحظة لهذه الشمعة (اختياري)<textarea rows="2" data-note maxlength="300" placeholder="اكتب أي تخصيص تريده، مثل اسم أو رسالة أو لون">${esc(x.note)}</textarea></label>
         <button type="button" class="oi-remove" data-remove>حذف ${esc(nameOf(x.k))} من الطلب</button></li>`).join('')}</ul>
       <label>ملاحظات عامة (اختياري)<textarea rows="2" id="orderGeneral" maxlength="400" placeholder="موعد التسليم أو العنوان أو أي طلب آخر">${esc(st.general)}</textarea></label>
@@ -324,7 +356,7 @@ window.shelvesReady = (async () => {
       <button type="button" class="oi-clear" data-clear>تفريغ الطلب</button></div>`;
   };
   body.addEventListener('click', e => {
-    const li = e.target.closest('.oi'), x = li && st.items.find(i => i.k === Number(li.dataset.k));
+    const li = e.target.closest('.oi'), x = li && st.items[Number(li.dataset.i)];
     const q = e.target.closest('[data-q]');
     if (q && x) { x.qty = Math.min(Math.max(x.qty + Number(q.dataset.q), 1), MAXQ); li.querySelector('output').textContent = arDigits(x.qty); }
     else if (e.target.closest('[data-remove]') && x) { st.items = st.items.filter(i => i !== x); draw(); const f = body.querySelector('[data-remove]'); if (f) f.focus(); else panel.focus(); }
@@ -333,7 +365,7 @@ window.shelvesReady = (async () => {
     save(); refresh();
   });
   body.addEventListener('input', e => {
-    const li = e.target.closest('.oi'), x = li && st.items.find(i => i.k === Number(li.dataset.k));
+    const li = e.target.closest('.oi'), x = li && st.items[Number(li.dataset.i)];
     if (x && e.target.matches('[data-note]')) x.note = e.target.value;
     else if (e.target.id === 'orderGeneral') st.general = e.target.value;
     else if (e.target.id === 'orderName') st.name = e.target.value;

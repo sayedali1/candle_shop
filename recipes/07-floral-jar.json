@@ -140,5 +140,17 @@
  "flame": {
   "size": 0.9,
   "width": 1.5
+ },
+ "custom": {
+  "color": [
+   {
+    "mat": "wrap",
+    "path": "texture.base"
+   }
+  ],
+  "name": {
+   "kind": "title",
+   "mat": "wrap"
+  }
  }
 }

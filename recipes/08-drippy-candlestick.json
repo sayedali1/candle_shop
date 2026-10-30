@@ -223,5 +223,13 @@
  ],
  "flame": {
   "size": 0.75
+ },
+ "custom": {
+  "color": [
+   {
+    "mat": "wax",
+    "path": "color"
+   }
+  ]
  }
 }

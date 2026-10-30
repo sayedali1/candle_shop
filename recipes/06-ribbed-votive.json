@@ -107,5 +107,13 @@
  ],
  "flame": {
   "size": 0.8
+ },
+ "custom": {
+  "color": [
+   {
+    "mat": "cream",
+    "path": "color"
+   }
+  ]
  }
 }

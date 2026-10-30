@@ -118,5 +118,13 @@
  ],
  "flame": {
   "size": 0.7
+ },
+ "custom": {
+  "color": [
+   {
+    "mat": "honey",
+    "path": "color"
+   }
+  ]
  }
 }

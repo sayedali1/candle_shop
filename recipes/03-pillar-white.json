@@ -68,5 +68,19 @@
  ],
  "flame": {
   "size": 1.0
+ },
+ "custom": {
+  "color": [
+   {
+    "mat": "white",
+    "path": "color"
+   }
+  ],
+  "name": {
+   "kind": "label",
+   "r": 0.424,
+   "y": 0.5,
+   "w": 0.56
+  }
  }
 }

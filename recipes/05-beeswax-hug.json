@@ -125,5 +125,13 @@
  ],
  "flame": {
   "size": 0.75
+ },
+ "custom": {
+  "color": [
+   {
+    "mat": "bees",
+    "path": "color"
+   }
+  ]
  }
 }
