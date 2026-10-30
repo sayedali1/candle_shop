@@ -255,6 +255,7 @@ export function makeBuilder(THREE) {
       } else if (p.shape === 'curls') {                           // curly fur: "pos", "radii" [x,y,z], "rot", "n" tufts of size "r"; "hide": {dir, angle} leaves a bare patch (a face); "minY" skips what is under the table
         if (!geoCache.has('curl')) geoCache.set('curl', new THREE.SphereGeometry(1, 6, 3));
         const im = new THREE.InstancedMesh(geoCache.get('curl'), m, p.n), dummy = new THREE.Object3D(), col = new THREE.Color();
+        const UP = new THREE.Vector3(0, 1, 0), spin = new THREE.Quaternion();
         const cen = new THREE.Vector3(...p.pos), eul = new THREE.Euler(...(p.rot || [0, 0, 0])), hide = p.hide && { d: new THREE.Vector3(...p.hide.dir).normalize(), c: Math.cos(p.hide.angle) };
         let seed = p.seed || 3; const rnd = () => (seed = (seed * 16807) % 2147483647) / 2147483647;
         const golden = Math.PI * (3 - Math.sqrt(5)); let k = 0;
@@ -264,8 +265,9 @@ export function makeBuilder(THREE) {
           const pt = new THREE.Vector3(u.x * p.radii[0], u.y * p.radii[1], u.z * p.radii[2]).applyEuler(eul).add(cen);
           if (pt.y < (p.minY ?? -9)) continue;
           if (hide && pt.clone().sub(cen).normalize().dot(hide.d) > hide.c) continue;
-          dummy.position.copy(pt); dummy.rotation.set(rnd() * 6, rnd() * 6, rnd() * 6);
-          const sz = p.r * (0.8 + 0.4 * rnd()); dummy.scale.set(sz, sz * (0.75 + 0.3 * rnd()), sz); dummy.updateMatrix();
+          const nrm = new THREE.Vector3(u.x / p.radii[0], u.y / p.radii[1], u.z / p.radii[2]).normalize().applyEuler(eul);   // the tuft lies on the skin: flat side down, turned at random
+          dummy.position.copy(pt); dummy.quaternion.setFromUnitVectors(UP, nrm).multiply(spin.setFromAxisAngle(UP, rnd() * 6.283));
+          const sz = p.r * (0.8 + 0.4 * rnd()); dummy.scale.set(sz * 1.15, sz * (0.55 + 0.2 * rnd()), sz * 1.15); dummy.updateMatrix();
           im.setMatrixAt(k, dummy.matrix);
           const shade = (0.9 + 0.2 * rnd()) * (u.y < -0.3 ? 0.78 : 1);        // each tuft a little lighter or darker, and darker underneath: depth
           im.setColorAt(k, col.setRGB(shade, shade, shade)); k++;

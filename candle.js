@@ -4,7 +4,7 @@
    DRAFT: shapes, colors and light are placeholders until the brand stage.
    Scrolling the hero turns the candle and moves the camera closer. */
 
-import { makeBuilder, customize } from './candle-builder.js?v=8';
+import { makeBuilder, customize } from './candle-builder.js?v=9';
 
 const hero = document.getElementById('hero');
 const stage = document.getElementById('stage');
