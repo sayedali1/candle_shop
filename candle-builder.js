@@ -42,6 +42,7 @@ export function customize(recipe, opts = {}) {
 }
 
 export function makeBuilder(THREE) {
+  let MC = null;                                                   // the MarchingCubes class, given by the page with setMarching (only recipes with a "blob" part need it)
   let GLTF = null;                                                 // the GLB loader, given by the page with setLoader (only pages that have a recipe with a "model" need it)
   const color = c => new THREE.Color(c);
   const geoCache = new Map(), texCache = new Map();                 // a shop has many candles but few recipes: they share geometry and textures (less memory, less building)
@@ -193,6 +194,80 @@ export function makeBuilder(THREE) {
   };
 
   /* builds one candle from a recipe. Returns what the page needs to light it and dim it. */
+
+  /* "blob": one smooth soft body made of blended ellipsoids (a puppy, a bear, a pebble). It is built once, by filling the MarchingCubes grid with our own
+     distances: "els": [{c:[x,y,z], r:[a,b,c], rot:[x,y,z]}], "k" how softly they melt together, "res" grid size, "box": {c:[x,y,z], h} the cube it fits in,
+     "clipY" a flat floor. Fur ("fur": {...}) is then drawn as thin shells around it, see the part code. */
+  const blobGeometry = (p) => {
+    if (!MC) return new THREE.BufferGeometry();
+    const res = p.res || 56, half = res / 2, C = p.box.c, S = p.box.h, k = p.k ?? 0.07, ISO = 80, G = 2000;
+    const mc = new MC(res, new THREE.MeshBasicMaterial(), false, false, res * res * 10);
+    const eul = new THREE.Euler(), M = new THREE.Matrix4();
+    const els = p.els.map((e) => {
+      M.makeRotationFromEuler(eul.set(...(e.rot || [0, 0, 0]))); const m = M.elements;     // the inverse of a rotation is its transpose
+      return { c: e.c, r: e.r, inv: [m[0], m[1], m[2], m[4], m[5], m[6], m[8], m[9], m[10]], mr: Math.min(...e.r) };
+    });
+    const f = mc.field;
+    for (let z = 0; z < res; z++) for (let y = 0; y < res; y++) for (let x = 0; x < res; x++) {
+      const wx = C[0] + S * (x - half) / half, wy = C[1] + S * (y - half) / half, wz = C[2] + S * (z - half) / half;
+      let dd = 1e9;
+      for (let i = 0; i < els.length; i++) {
+        const e = els[i], dx = wx - e.c[0], dy = wy - e.c[1], dz = wz - e.c[2], v = e.inv;
+        const qx = v[0] * dx + v[1] * dy + v[2] * dz, qy = v[3] * dx + v[4] * dy + v[5] * dz, qz = v[6] * dx + v[7] * dy + v[8] * dz;
+        const ax = qx / e.r[0], ay = qy / e.r[1], az = qz / e.r[2];
+        const k0 = Math.sqrt(ax * ax + ay * ay + az * az), k1 = Math.sqrt((ax / e.r[0]) ** 2 + (ay / e.r[1]) ** 2 + (az / e.r[2]) ** 2);
+        const d = k1 > 1e-9 ? k0 * (k0 - 1) / k1 : -e.mr;                  // a good estimate of the distance to an ellipsoid
+        if (dd > 1e8) dd = d; else { const h = Math.max(k - Math.abs(dd - d), 0) / k; dd = Math.min(dd, d) - h * h * k * 0.25; }     // melt: smooth minimum
+      }
+      if (p.clipY !== undefined) dd = Math.max(dd, p.clipY - wy);
+      f[x + y * res + z * res * res] = ISO - dd * G;
+    }
+    mc.isolation = ISO; mc.update();
+    const n = mc.count * 3, pos = new Float32Array(n), nor = new Float32Array(n);
+    for (let i = 0; i < mc.count; i++) {
+      pos[i * 3] = mc.positionArray[i * 3] * S + C[0]; pos[i * 3 + 1] = mc.positionArray[i * 3 + 1] * S + C[1]; pos[i * 3 + 2] = mc.positionArray[i * 3 + 2] * S + C[2];
+      const nx = mc.normalArray[i * 3], ny = mc.normalArray[i * 3 + 1], nz = mc.normalArray[i * 3 + 2], l = Math.hypot(nx, ny, nz) || 1;
+      nor[i * 3] = nx / l; nor[i * 3 + 1] = ny / l; nor[i * 3 + 2] = nz / l;
+    }
+    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
+    g.computeBoundingSphere(); return g;
+  };
+
+  /* fur shells: the same body drawn "layers" times, each a little bigger, with most of it cut away by a pattern of strands: stacked up it looks like fur.
+     "fur": { material, layers, len, dens, droop, under, bare: [[x,y,z,radius], ...] (no fur there: a muzzle) } */
+  const furShellMaterial = (base, t, F, glows, tints) => {
+    const fm = base.clone(); fm.bumpMap = null;
+    tints.push({ m: fm, base: fm.color.clone() });
+    const g = glows.find((q) => q.m === base); if (g) glows.push({ m: fm, k: g.k });
+    const bare = [0, 1, 2, 3].map((i) => (F.bare && F.bare[i]) ? new THREE.Vector4(...F.bare[i]) : new THREE.Vector4(0, 0, 0, 0));
+    fm.onBeforeCompile = (sh) => {
+      sh.uniforms.uShell = { value: t }; sh.uniforms.uLen = { value: F.len || 0.04 }; sh.uniforms.uDroop = { value: F.droop || 0 };
+      sh.uniforms.uDens = { value: F.dens || 40 }; sh.uniforms.uUnder = { value: F.under ?? 0.55 }; sh.uniforms.uBare = { value: bare };
+      sh.vertexShader = sh.vertexShader
+        .replace('#include <common>', '#include <common>\nvarying vec3 vObj; uniform float uShell, uLen, uDroop;')
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvObj = position; transformed += normal * (uShell * uLen); transformed.y -= uShell * uShell * uDroop;');
+      sh.fragmentShader = sh.fragmentShader
+        .replace('#include <common>', `#include <common>
+varying vec3 vObj; uniform float uShell, uDens, uUnder; uniform vec4 uBare[4];
+float h3(vec3 p) { p = fract(p * 0.3183099 + 0.1); p *= 17.0; return fract(p.x * p.y * p.z * (p.x + p.y + p.z)); }`)
+        .replace('#include <clipping_planes_fragment>', `#include <clipping_planes_fragment>
+float tone = 1.0;
+for (int bi = 0; bi < 4; bi++) { if (uBare[bi].w > 0.0 && distance(vObj, uBare[bi].xyz) < uBare[bi].w) discard; }
+{
+  vec3 pc = vObj * uDens; vec3 cell = floor(pc); vec3 fr = fract(pc) - 0.5;
+  float hh = 0.6 + 0.4 * h3(cell);
+  vec3 jit = vec3(h3(cell + 7.1), h3(cell + 13.7), h3(cell + 3.3)) - 0.5;
+  fr += 0.28 * uShell * vec3(sin(cell.y * 2.3 + uShell * 6.0), sin(cell.z * 1.7 + 2.0), cos(cell.x * 2.9 + uShell * 6.0));     // curl: each strand wanders as it rises
+  tone = 0.82 + 0.3 * h3(cell + 21.7);
+  float dist = length(fr - jit * 0.5 - jit.zxy * uShell * 0.9) * 1.6;
+  float reach = 1.0 - uShell / hh;
+  if (uShell > hh || dist > 0.42 + 0.45 * reach) discard;
+}`)
+        .replace('#include <color_fragment>', '#include <color_fragment>\ndiffuseColor.rgb *= mix(uUnder, 1.0, uShell) * tone;');
+    };
+    return fm;
+  };
+
   function build(recipe, fresh = false) {
     const group = new THREE.Group(), tints = [], glows = [], cache = {}, own = [];   // fresh: its textures are its own (not shared), so dispose() can free them
 
@@ -275,6 +350,15 @@ export function makeBuilder(THREE) {
         }
         im.count = k; im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true;
         im.frustumCulled = false; group.add(im);
+      } else if (p.shape === 'blob') {                            // a soft body of blended ellipsoids, with fur shells (see blobGeometry)
+        const bk = 'blob' + JSON.stringify([p.els, p.k, p.res, p.box, p.clipY]);
+        if (!geoCache.has(bk)) geoCache.set(bk, blobGeometry(p));
+        const geo = geoCache.get(bk), F = p.fur;
+        group.add(new THREE.Mesh(geo, m));
+        if (F && F.layers) {
+          const base = material(F.material || p.material);
+          for (let i = 1; i <= F.layers; i++) { const sm = new THREE.Mesh(geo, furShellMaterial(base, i / F.layers, F, glows, tints)); sm.frustumCulled = false; group.add(sm); }
+        }
       } else if (p.shape === 'dots') {                            // small round things: eyes, a nose. "at": [[x,y,z],...], "r"
         const dk = 'dot' + p.r;
         if (!geoCache.has(dk)) geoCache.set(dk, new THREE.SphereGeometry(p.r, 16, 12));
@@ -342,7 +426,7 @@ export function makeBuilder(THREE) {
     return { group, tints, glows, dispose, loaded, info: { wickY: w0.tip, flameX: w0.x || 0, fs: fl.size ?? 1, fw: fl.width ?? 1 }, turn: recipe.turn || 0, size: recipe.size || 1 };
   }
 
-  return { build, canvasTexture, setLoader: L => { GLTF = L; } };
+  return { build, canvasTexture, setLoader: L => { GLTF = L; }, setMarching: C => { MC = C; } };
 }
 
 /* the flame: an outer soft layer, a bright core and a faint halo, all swaying. Used by the Candle Lab; the page has its own copy in candle.js. */

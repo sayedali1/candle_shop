@@ -4,7 +4,7 @@
    DRAFT: shapes, colors and light are placeholders until the brand stage.
    Scrolling the hero turns the candle and moves the camera closer. */
 
-import { makeBuilder, customize } from './candle-builder.js?v=10';
+import { makeBuilder, customize } from './candle-builder.js?v=11';
 
 const hero = document.getElementById('hero');
 const stage = document.getElementById('stage');
@@ -427,6 +427,9 @@ async function start() {
      If the recipes cannot load, the shelf keeps the stand-in photos. */
   const builder = makeBuilder(THREE);
   const recipes = await recipesP;
+  if (recipes.some(r => (r.parts || []).some(q => q.shape === 'blob'))) {      // a soft blob body: only then the MarchingCubes addon is fetched
+    try { builder.setMarching((await import('three/addons/objects/MarchingCubes.js')).MarchingCubes); } catch (e) { console.warn('MarchingCubes not loaded:', e); }
+  }
   if (recipes.some(r => r.model)) {                                // a candle made from a 3D file: only then the GLB loader is fetched
     try { builder.setLoader((await import('three/addons/loaders/GLTFLoader.js')).GLTFLoader); } catch (e) { console.warn('GLB loader not loaded:', e); }
   }
