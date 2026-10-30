@@ -118,6 +118,37 @@ export function makeBuilder(THREE) {
     })
   };
 
+  /* "fuzz": { amp, freq } pushes a surface in and out with smooth noise: curly fur on a sculpted candle (sphere and capsule parts) */
+  const hash3 = (x, y, z) => { let h = Math.imul(x, 374761393) ^ Math.imul(y, 668265263) ^ Math.imul(z, 2147483629); h = Math.imul(h ^ (h >>> 13), 1274126177); return ((h ^ (h >>> 16)) >>> 0) / 4294967295; };
+  const GRADS = [[1, 1, 0], [-1, 1, 0], [1, -1, 0], [-1, -1, 0], [1, 0, 1], [-1, 0, 1], [1, 0, -1], [-1, 0, -1], [0, 1, 1], [0, -1, 1], [0, 1, -1], [0, -1, -1]];
+  const grad = (xi, yi, zi, x, y, z) => { const g = GRADS[Math.floor(hash3(xi, yi, zi) * 12) % 12]; return g[0] * x + g[1] * y + g[2] * z; };
+  const vnoise = (x, y, z) => {                                 // smooth gradient noise, about -0.9 to 0.9 (no grid-aligned steps)
+    const xi = Math.floor(x), yi = Math.floor(y), zi = Math.floor(z), fx = x - xi, fy = y - yi, fz = z - zi;
+    const fade = t => t * t * t * (t * (t * 6 - 15) + 10), u = fade(fx), v = fade(fy), w = fade(fz), L = (a, b, t) => a + (b - a) * t;
+    return L(L(L(grad(xi, yi, zi, fx, fy, fz), grad(xi + 1, yi, zi, fx - 1, fy, fz), u), L(grad(xi, yi + 1, zi, fx, fy - 1, fz), grad(xi + 1, yi + 1, zi, fx - 1, fy - 1, fz), u), v),
+             L(L(grad(xi, yi, zi + 1, fx, fy, fz - 1), grad(xi + 1, yi, zi + 1, fx - 1, fy, fz - 1), u), L(grad(xi, yi + 1, zi + 1, fx, fy - 1, fz - 1), grad(xi + 1, yi + 1, zi + 1, fx - 1, fy - 1, fz - 1), u), v), w);
+  };
+  const fuzzGeo = (g, f) => {
+    const pa = g.attributes.position, na = g.attributes.normal;
+    for (let i = 0; i < pa.count; i++) {
+      const x = pa.getX(i), y = pa.getY(i), z = pa.getZ(i), q = f.freq;
+      const x2 = (0.36 * x + 0.48 * y - 0.8 * z) * q * 2.3, y2 = (-0.8 * x + 0.6 * y) * q * 2.3, z2 = (0.48 * x + 0.64 * y + 0.6 * z) * q * 2.3;   // the finer layer is turned, so the two never line up
+      const d = (vnoise(x * q, y * q, z * q) + 0.5 * vnoise(x2, y2, z2)) * f.amp;      // two layers: big curls and finer ones
+      pa.setXYZ(i, x + na.getX(i) * d, y + na.getY(i) * d, z + na.getZ(i) * d);
+    }
+    g.computeVertexNormals();
+    return g;
+  };
+
+  /* a capsule built as a lathe with many rings along its length (the stock capsule has none in the middle, so the fur could not bend it) */
+  const capsuleLathe = p => {
+    const C = 18, H = Math.max(2, Math.ceil(p.len / (p.r * 0.14))), pts = [];
+    for (let i = 0; i <= C; i++) { const a = -Math.PI / 2 + (i / C) * (Math.PI / 2); pts.push(new THREE.Vector2(Math.max(p.r * Math.cos(a), 0.0001), -p.len / 2 + p.r * Math.sin(a))); }
+    for (let j = 1; j < H; j++) pts.push(new THREE.Vector2(p.r, -p.len / 2 + (j / H) * p.len));
+    for (let i = 0; i <= C; i++) { const a = (i / C) * (Math.PI / 2); pts.push(new THREE.Vector2(Math.max(p.r * Math.cos(a), 0.0001), p.len / 2 + p.r * Math.sin(a))); }
+    return new THREE.LatheGeometry(pts, 64);
+  };
+
   /* ---------- geometry for each part shape ---------- */
   const shapes = {
     lathe: (p) => {                                              // a profile of [radius, height] points turned around the middle
@@ -135,9 +166,9 @@ export function makeBuilder(THREE) {
     cylinder: (p) => new THREE.CylinderGeometry(p.r, p.rb ?? p.r, p.h, p.segments || 64, 1, !!p.open, p.thetaStart, p.thetaLength),
     disc: (p) => new THREE.CircleGeometry(p.r, 48).rotateX(-Math.PI / 2),
     torus: (p) => new THREE.TorusGeometry(p.r, p.tube, 10, 64).rotateX(Math.PI / 2),
-    capsule: (p) => new THREE.CapsuleGeometry(p.r, p.len, 8, 24),
+    capsule: (p) => p.fuzz ? fuzzGeo(capsuleLathe(p), p.fuzz) : new THREE.CapsuleGeometry(p.r, p.len, 8, 24),
     box: (p) => new THREE.BoxGeometry(...p.size),
-    sphere: (p) => new THREE.IcosahedronGeometry(p.r, 2)
+    sphere: (p) => p.fuzz ? fuzzGeo(new THREE.SphereGeometry(p.r, 72, 52), p.fuzz) : new THREE.IcosahedronGeometry(p.r, 2)
   };
 
   /* builds one candle from a recipe. Returns what the page needs to light it and dim it. */
@@ -201,6 +232,10 @@ export function makeBuilder(THREE) {
           const d = new THREE.Mesh(new THREE.CapsuleGeometry(r, len, 4, 10), m);
           d.position.set(Math.cos(an) * (p.ring + r * 0.3), p.y - len / 2, Math.sin(an) * (p.ring + r * 0.3)); group.add(d);
         }
+      } else if (p.shape === 'dots') {                            // small round things: eyes, a nose. "at": [[x,y,z],...], "r"
+        const dk = 'dot' + p.r;
+        if (!geoCache.has(dk)) geoCache.set(dk, new THREE.SphereGeometry(p.r, 16, 12));
+        p.at.forEach(([x, y, z]) => { const d = new THREE.Mesh(geoCache.get(dk), m); d.position.set(x, y, z); group.add(d); });
       } else if (p.shape === 'stones') {                          // a ring of crystals around the wick
         p.colors.forEach((c, k) => {
           const sk = 'stone' + (p.size || 0.065);
@@ -212,7 +247,13 @@ export function makeBuilder(THREE) {
       } else {
         const { pos, rot, scale, material: _m, ...shape } = p, gk = JSON.stringify(shape);
         if (!geoCache.has(gk)) geoCache.set(gk, shapes[p.shape](p));
-        place(new THREE.Mesh(geoCache.get(gk), m), p);
+        const mesh = place(new THREE.Mesh(geoCache.get(gk), m), p);
+        if (p.mirror) {                                           // the same part on the other side: "mirror": { "axis": "x" or "z", "about": number }
+          const mm = mesh.clone(), ax = p.mirror.axis;
+          mm.position[ax] = 2 * (p.mirror.about || 0) - mesh.position[ax];
+          if (ax === 'x') { mm.rotation.z = -mesh.rotation.z; mm.rotation.y = -mesh.rotation.y; } else { mm.rotation.x = -mesh.rotation.x; mm.rotation.y = -mesh.rotation.y; }
+          group.add(mm);
+        }
       }
     });
 

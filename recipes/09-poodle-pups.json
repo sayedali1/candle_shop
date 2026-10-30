@@ -1,0 +1,348 @@
+{
+ "name": "two fluffy poodle puppies, one sitting on the other (sculpted wax)",
+ "turn": -0.45,
+ "size": 0.88,
+ "shadow": 1.9,
+ "materials": {
+  "coat": {
+   "kind": "matte",
+   "color": "#cf9358",
+   "roughness": 0.9,
+   "sheen": 0.45,
+   "sheenColor": "#ffcf9a",
+   "sheenRoughness": 0.6,
+   "bump": 0.5,
+   "glow": 0.14,
+   "glowColor": "#ff9a50"
+  },
+  "muzzle": {
+   "kind": "matte",
+   "color": "#e3b88a",
+   "roughness": 0.9,
+   "sheen": 0.45,
+   "sheenColor": "#ffcf9a",
+   "sheenRoughness": 0.6,
+   "bump": 0.3,
+   "glow": 0.14,
+   "glowColor": "#ff9a50"
+  },
+  "ears": {
+   "kind": "matte",
+   "color": "#c0824a",
+   "roughness": 0.9,
+   "sheen": 0.45,
+   "sheenColor": "#ffcf9a",
+   "sheenRoughness": 0.6,
+   "bump": 0.5,
+   "glow": 0.14,
+   "glowColor": "#ff9a50"
+  },
+  "ink": {
+   "kind": "solid",
+   "color": "#17100b",
+   "roughness": 0.28,
+   "clearcoat": 1,
+   "clearcoatRoughness": 0.1
+  }
+ },
+ "parts": [
+  {
+   "shape": "capsule",
+   "material": "coat",
+   "r": 0.21,
+   "len": 0.4,
+   "pos": [
+    -0.12,
+    0.21,
+    0
+   ],
+   "rot": [
+    0,
+    0,
+    1.5708
+   ],
+   "fuzz": {
+    "amp": 0.03,
+    "freq": 20
+   }
+  },
+  {
+   "shape": "sphere",
+   "material": "coat",
+   "r": 0.21,
+   "pos": [
+    0.38,
+    0.37,
+    0
+   ],
+   "fuzz": {
+    "amp": 0.028,
+    "freq": 22
+   }
+  },
+  {
+   "shape": "sphere",
+   "material": "muzzle",
+   "r": 0.1,
+   "pos": [
+    0.55,
+    0.3,
+    0
+   ],
+   "scale": [
+    1.3,
+    0.9,
+    0.9
+   ],
+   "fuzz": {
+    "amp": 0.012,
+    "freq": 25
+   }
+  },
+  {
+   "shape": "capsule",
+   "material": "ears",
+   "r": 0.078,
+   "len": 0.17,
+   "pos": [
+    0.3,
+    0.25,
+    0.2
+   ],
+   "rot": [
+    0.3,
+    0,
+    0
+   ],
+   "mirror": {
+    "axis": "z",
+    "about": 0
+   },
+   "fuzz": {
+    "amp": 0.024,
+    "freq": 22
+   }
+  },
+  {
+   "shape": "capsule",
+   "material": "coat",
+   "r": 0.062,
+   "len": 0.2,
+   "pos": [
+    0.36,
+    0.07,
+    0.105
+   ],
+   "rot": [
+    0,
+    0,
+    1.5708
+   ],
+   "mirror": {
+    "axis": "z",
+    "about": 0
+   },
+   "fuzz": {
+    "amp": 0.016,
+    "freq": 26
+   }
+  },
+  {
+   "shape": "sphere",
+   "material": "coat",
+   "r": 0.15,
+   "pos": [
+    -0.4,
+    0.16,
+    0.12
+   ],
+   "scale": [
+    1.1,
+    0.9,
+    0.8
+   ],
+   "mirror": {
+    "axis": "z",
+    "about": 0
+   },
+   "fuzz": {
+    "amp": 0.024,
+    "freq": 20
+   }
+  },
+  {
+   "shape": "sphere",
+   "material": "coat",
+   "r": 0.06,
+   "pos": [
+    -0.62,
+    0.27,
+    0
+   ],
+   "fuzz": {
+    "amp": 0.016,
+    "freq": 26
+   }
+  },
+  {
+   "shape": "capsule",
+   "material": "coat",
+   "r": 0.2,
+   "len": 0.06,
+   "pos": [
+    -0.1,
+    0.62,
+    0.02
+   ],
+   "rot": [
+    0.15,
+    0,
+    0
+   ],
+   "fuzz": {
+    "amp": 0.03,
+    "freq": 20
+   }
+  },
+  {
+   "shape": "sphere",
+   "material": "coat",
+   "r": 0.2,
+   "pos": [
+    -0.1,
+    0.93,
+    0.07
+   ],
+   "fuzz": {
+    "amp": 0.028,
+    "freq": 22
+   }
+  },
+  {
+   "shape": "sphere",
+   "material": "muzzle",
+   "r": 0.095,
+   "pos": [
+    -0.1,
+    0.88,
+    0.235
+   ],
+   "scale": [
+    1,
+    0.85,
+    1.1
+   ],
+   "fuzz": {
+    "amp": 0.01,
+    "freq": 30
+   }
+  },
+  {
+   "shape": "capsule",
+   "material": "ears",
+   "r": 0.07,
+   "len": 0.16,
+   "pos": [
+    0.115,
+    0.88,
+    0.06
+   ],
+   "rot": [
+    0,
+    0,
+    -0.25
+   ],
+   "mirror": {
+    "axis": "x",
+    "about": -0.1
+   },
+   "fuzz": {
+    "amp": 0.024,
+    "freq": 22
+   }
+  },
+  {
+   "shape": "capsule",
+   "material": "coat",
+   "r": 0.055,
+   "len": 0.18,
+   "pos": [
+    0.0,
+    0.44,
+    0.17
+   ],
+   "rot": [
+    1.45,
+    0,
+    0
+   ],
+   "mirror": {
+    "axis": "x",
+    "about": -0.1
+   },
+   "fuzz": {
+    "amp": 0.016,
+    "freq": 26
+   }
+  },
+  {
+   "shape": "dots",
+   "material": "ink",
+   "r": 0.03,
+   "at": [
+    [
+     0.525,
+     0.44,
+     0.105
+    ],
+    [
+     0.525,
+     0.44,
+     -0.105
+    ],
+    [
+     0.69,
+     0.34,
+     0
+    ],
+    [
+     -0.185,
+     0.985,
+     0.24
+    ],
+    [
+     -0.015,
+     0.985,
+     0.24
+    ],
+    [
+     -0.1,
+     0.92,
+     0.34
+    ]
+   ]
+  }
+ ],
+ "wicks": [
+  {
+   "kind": "long",
+   "x": -0.1,
+   "base": 1.1,
+   "tip": 1.27,
+   "color": "#efe3cf",
+   "radius": 0.015
+  }
+ ],
+ "flame": {
+  "size": 0.9,
+  "width": 1.0
+ },
+ "custom": {
+  "color": [
+   {
+    "mat": "coat",
+    "path": "color"
+   }
+  ]
+ }
+}
