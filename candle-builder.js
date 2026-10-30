@@ -233,6 +233,33 @@ export function makeBuilder(THREE) {
     g.computeBoundingSphere(); return g;
   };
 
+  /* "relief": soft curls carved into the wax. Not hair: the outline stays smooth and only the light shows the curls. The curl picture (the same one "fur" bump uses)
+     is laid on the body from three sides, because a blob has no UV. "relief": { scale: curls per unit (default 0.75), depth: how deep (default 0.01) } */
+  const reliefize = (mat, R) => {
+    const tex = getFur();
+    mat.onBeforeCompile = (sh) => {
+      sh.uniforms.uRel = { value: tex }; sh.uniforms.uRelS = { value: R.scale || 0.75 }; sh.uniforms.uRelD = { value: R.depth ?? 0.01 };
+      sh.vertexShader = sh.vertexShader
+        .replace('#include <common>', '#include <common>\nvarying vec3 vObj; varying vec3 vObjN;')
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvObj = position; vObjN = normal;');
+      sh.fragmentShader = sh.fragmentShader
+        .replace('#include <common>', `#include <common>
+varying vec3 vObj; varying vec3 vObjN; uniform sampler2D uRel; uniform float uRelS, uRelD;
+float relH(vec3 p, vec3 w) { return w.x * texture2D(uRel, p.zy * uRelS).r + w.y * texture2D(uRel, p.xz * uRelS).r + w.z * texture2D(uRel, p.xy * uRelS).r; }`)
+        .replace('#include <normal_fragment_begin>', `#include <normal_fragment_begin>
+{
+  vec3 w = pow(abs(normalize(vObjN)), vec3(4.0)); w /= (w.x + w.y + w.z);
+  vec3 dpx = dFdx(vObj), dpy = dFdy(vObj);
+  float h0 = relH(vObj, w), hx = relH(vObj + dpx, w), hy = relH(vObj + dpy, w);
+  vec3 sx = dFdx(-vViewPosition), sy = dFdy(-vViewPosition);
+  vec3 R1 = cross(sy, normal), R2 = cross(normal, sx); float det = dot(sx, R1);
+  vec3 grad = sign(det) * ((hx - h0) * R1 + (hy - h0) * R2);
+  normal = normalize(abs(det) * normal - uRelD * grad);
+}`);
+    };
+    return mat;
+  };
+
   /* fur shells: the same body drawn "layers" times, each a little bigger, with most of it cut away by a pattern of strands: stacked up it looks like fur.
      "fur": { material, layers, len, dens, droop, under, bare: [[x,y,z,radius], ...] (no fur there: a muzzle) } */
   const furShellMaterial = (base, t, F, glows, tints) => {
@@ -354,7 +381,7 @@ for (int bi = 0; bi < 4; bi++) { if (uBare[bi].w > 0.0 && distance(vObj, uBare[b
         const bk = 'blob' + JSON.stringify([p.els, p.k, p.res, p.box, p.clipY]);
         if (!geoCache.has(bk)) geoCache.set(bk, blobGeometry(p));
         const geo = geoCache.get(bk), F = p.fur;
-        group.add(new THREE.Mesh(geo, m));
+        group.add(new THREE.Mesh(geo, p.relief ? reliefize(m, p.relief) : m));
         if (F && F.layers) {
           const base = material(F.material || p.material);
           for (let i = 1; i <= F.layers; i++) { const sm = new THREE.Mesh(geo, furShellMaterial(base, i / F.layers, F, glows, tints)); sm.frustumCulled = false; group.add(sm); }
