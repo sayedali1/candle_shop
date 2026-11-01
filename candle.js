@@ -4,7 +4,7 @@
    DRAFT: shapes, colors and light are placeholders until the brand stage.
    Scrolling the hero turns the candle and moves the camera closer. */
 
-import { makeBuilder, customize } from './candle-builder.js?v=12';
+import { makeBuilder, customize } from './candle-builder.js?v=22';
 
 const hero = document.getElementById('hero');
 const stage = document.getElementById('stage');
@@ -456,6 +456,7 @@ async function start() {
     const c = builder.build(recipes[i % recipes.length]);
     c.g = c.group; c.el = item.querySelector('.img'); c.lit = 0;    // the slot is the picture box of the item
     c.g.visible = false; (slotsOn ? sScene : shelfGroup).add(c.g);
+    c.size = recipes[i % recipes.length].shelfSize ?? c.size;        // how big it stands on the shelf, apart from the units it was built in
     c.swayAmt = 0; c.dLit = 0; c.dSway = 0; c.hadFlame = false; c.dirty = true;   // what was last drawn into the slot
     if (c.loaded) c.loaded.then(() => { c.dirty = true; });                         // a candle from a 3D file arrives a moment later: draw it again then
     return c;
@@ -513,7 +514,7 @@ async function start() {
     const sc = c.ch * 0.74 / ppu * (0.9 + 0.1 * c.lit) * c.size;       // the candle is 1 unit tall: this is its height in world units
     c.g.visible = true; c.g.scale.setScalar(sc);
     c.g.position.set(0, (cssH / 2 - (pt + c.ch + 4 - 10 * c.lit)) / ppu, 0);   // sits a little below the slot (on the shelf), lifted when lit
-    c.g.rotation.y = c.turn + (reduce ? 0 : Math.sin(t * 0.4 + i) * 0.25 * c.swayAmt);
+    c.g.rotation.y = c.turn + (reduce ? 0 : Math.sin(t * 0.4 + i) * Math.min(0.25, c.turnLimit ?? 1) * c.swayAmt);
     const dim = 0.62 + 0.38 * c.lit;
     c.tints.forEach(({ m, base }) => m.color.copy(base).multiplyScalar(dim));
     const lightUp = isFlame ? (1 + flick * 1.6) * fAmt : 0;
@@ -596,7 +597,8 @@ async function start() {
       c.lit += ((item.classList.contains('is-active') ? 1 : 0) - c.lit) * (reduce ? 1 : k);
       c.g.scale.setScalar(r.height * 0.74 / ppu * (0.9 + 0.1 * c.lit) * c.size);
       c.g.position.set((r.left + r.width / 2 - vw / 2) / ppu, (vh / 2 - (r.bottom + 4 - 10 * c.lit)) / ppu, 0);   // lifted a little when lit
-      c.g.rotation.y = c.turn + (reduce ? 0 : Math.sin(t * 0.4 + i) * 0.25 * c.lit);
+      const faceCam = c.turnLimit !== undefined ? -Math.atan2(c.g.position.x, SHELF_D) : 0;   // a candle built from one photo faces the camera wherever it stands on the shelf, or the view from the side adds to its turn
+      c.g.rotation.y = c.turn + faceCam + (reduce ? 0 : Math.sin(t * 0.4 + i) * Math.min(0.25, c.turnLimit ?? 1) * c.lit);
       const dim = 0.62 + 0.38 * c.lit;                                // the unlit ones are dimmer
       c.tints.forEach(({ m, base }) => m.color.copy(base).multiplyScalar(dim));
       const lightUp = i === flameAt ? (1 + flick * 1.6) * flameAmt : 0;
@@ -619,7 +621,7 @@ async function start() {
       shelfLight.position.set(fx, fy + 0.4 * sh, 0.3 * sw);
       x = vw / 2 + fx * ppu; y = vh / 2 - (fy + 0.1 * sh) * ppu;
     }
-    shelfLight.intensity = on ? FLAME_LIGHT * (1 + flick * 1.2) * flameAmt : 0;
+    shelfLight.intensity = on ? FLAME_LIGHT * (c.info.light) * (1 + flick * 1.2) * flameAmt : 0;   // a candle with fine relief can ask for a gentler flame (recipe "flameLight"): up close it burns out the detail
     return { amt: on ? flameAmt : 0, x, y };
   }
 
@@ -905,7 +907,9 @@ shelf candles built ${shelfCandles.filter(Boolean).length} of ${shelfItems.lengt
     const t = clock.elapsedTime, flick = reduce ? 0 : Math.sin(t * 9) * 0.05 + Math.sin(t * 23.7) * 0.03 + Math.sin(t * 37) * 0.02;
     const sc = (SIZES[cp.opts.size] || 1) * c.size;
     c.group.scale.setScalar(sc);
-    c.group.rotation.y = c.turn + cp.rot + (reduce || cp.drag ? 0 : Math.sin(t * 0.5) * 0.35);
+    const lim = c.turnLimit ?? Infinity;                               // a candle built from one photo only holds up near that photo's angle (recipe "turnLimit")
+    if (lim < Infinity) cp.rot = Math.max(-lim, Math.min(lim, cp.rot));
+    c.group.rotation.y = c.turn + cp.rot + (reduce || cp.drag ? 0 : Math.sin(t * 0.5) * Math.min(0.35, lim - Math.abs(cp.rot)));
     c.glows.forEach(({ m, k }) => { m.emissiveIntensity = k * (1 + flick * 1.6); });
     const fx = (c.info.flameX || 0) * sc, fy = c.info.wickY * sc, fs = c.info.fs, fw = c.info.fw;
     p.fh.position.set(fx, fy - 0.005 * sc, 0); p.fo.position.copy(p.fh.position); p.fc.position.copy(p.fh.position);

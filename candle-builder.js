@@ -1,6 +1,7 @@
 /* Builds a 3D candle from a small recipe (a JSON file), so a new candle is a new file, not new code.
    The recipe format is documented in the candle-from-photo skill (references/recipe-format.md).
    Used by the page (candle.js) and by the Candle Lab (lab.html). Needs Three.js passed in. */
+import { makeBlobGeometry, decodeBlob } from './blob-geometry.js?v=4';
 
 const KINDS = {                                                   // what each material kind starts from; a recipe overrides any of it
   wax:   { roughness: 0.48, sheen: 1, sheenRoughness: 0.5, sheenColor: '#ffe0a0', bump: 0.35, glow: 0.35, clearcoat: 0.12, clearcoatRoughness: 0.5 },
@@ -45,7 +46,33 @@ export function makeBuilder(THREE) {
   let MC = null;                                                   // the MarchingCubes class, given by the page with setMarching (only recipes with a "blob" part need it)
   let GLTF = null;                                                 // the GLB loader, given by the page with setLoader (only pages that have a recipe with a "model" need it)
   const color = c => new THREE.Color(c);
-  const geoCache = new Map(), texCache = new Map();                 // a shop has many candles but few recipes: they share geometry and textures (less memory, less building)
+  const geoCache = new Map(), texCache = new Map(), bakeWait = new Map();                 // a shop has many candles but few recipes: they share geometry and textures (less memory, less building)
+  const curlGeometry = (detail) => {                                                      // one curl: a lobed, twisted lump, darker at its foot so the gaps between curls read as shadow
+    const ico = new THREE.IcosahedronGeometry(1, detail), P = ico.attributes.position, seen = new Map(), vs = [], idx = [];
+    for (let i = 0; i < P.count; i++) {
+      const k = [P.getX(i), P.getY(i), P.getZ(i)].map(v => v.toFixed(4)).join();
+      if (!seen.has(k)) { seen.set(k, vs.length / 3); vs.push(P.getX(i), P.getY(i), P.getZ(i)); }
+      idx.push(seen.get(k));
+    }
+    const col = new Float32Array(vs.length);
+    for (let i = 0; i < vs.length; i += 3) {
+      const x = vs[i], y = vs[i + 1], z = vs[i + 2], lobes = 1 + 0.1 * Math.sin(2 * Math.atan2(z, x) + 3 * y);
+      vs[i] = x * lobes; vs[i + 2] = z * lobes;
+      const t = Math.min(1, Math.max(0, (y + 0.8) / 1.3)), c = 0.62 + 0.38 * t * t * (3 - 2 * t);
+      col[i] = c; col[i + 1] = c * (0.9 + 0.1 * t); col[i + 2] = c * (0.8 + 0.2 * t);      // the foot goes warmer as well as darker, like light inside wax
+    }
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(vs, 3)); g.setAttribute('color', new THREE.BufferAttribute(col, 3)); g.setIndex(idx); g.computeVertexNormals();
+    const Nm = g.attributes.normal;                                                       // lean every normal toward the curl's "up" (the body's direction): the light then flows over the whole coat, with soft lumps and no outlined pebbles
+    for (let i = 0; i < Nm.count; i++) {
+      const x = Nm.getX(i) * 0.78, y = Nm.getY(i) * 0.78 + 0.22, z = Nm.getZ(i) * 0.78, l = Math.hypot(x, y, z) || 1;
+      Nm.setXYZ(i, x / l, y / l, z / l);
+    }
+    const top = [];                                                                       // the foot is sunk in the body and never seen: leave it out, a curl costs about half the triangles
+    for (let i = 0; i < idx.length; i += 3) if (Math.max(vs[idx[i] * 3 + 1], vs[idx[i + 1] * 3 + 1], vs[idx[i + 2] * 3 + 1]) > -0.3) top.push(idx[i], idx[i + 1], idx[i + 2]);
+    g.setIndex(top);
+    return g;
+  };
 
   const canvasTexture = (w, h, draw, srgb = true) => {
     const c = document.createElement('canvas'); c.width = w; c.height = h;
@@ -195,67 +222,53 @@ export function makeBuilder(THREE) {
 
   /* builds one candle from a recipe. Returns what the page needs to light it and dim it. */
 
-  /* "blob": one smooth soft body made of blended ellipsoids (a puppy, a bear, a pebble). It is built once, by filling the MarchingCubes grid with our own
-     distances: "els": [{c:[x,y,z], r:[a,b,c], rot:[x,y,z]}], "k" how softly they melt together, "res" grid size, "box": {c:[x,y,z], h} the cube it fits in,
-     "clipY" a flat floor. Fur ("fur": {...}) is then drawn as thin shells around it, see the part code. */
-  const blobGeometry = (p) => {
-    if (!MC) return new THREE.BufferGeometry();
-    const res = p.res || 56, half = res / 2, C = p.box.c, S = p.box.h, k = p.k ?? 0.07, ISO = 80, G = 2000;
-    const mc = new MC(res, new THREE.MeshBasicMaterial(), false, false, res * res * 10);
-    const eul = new THREE.Euler(), M = new THREE.Matrix4();
-    const els = p.els.map((e) => {
-      M.makeRotationFromEuler(eul.set(...(e.rot || [0, 0, 0]))); const m = M.elements;     // the inverse of a rotation is its transpose
-      return { c: e.c, r: e.r, inv: [m[0], m[1], m[2], m[4], m[5], m[6], m[8], m[9], m[10]], mr: Math.min(...e.r) };
-    });
-    const f = mc.field;
-    for (let z = 0; z < res; z++) for (let y = 0; y < res; y++) for (let x = 0; x < res; x++) {
-      const wx = C[0] + S * (x - half) / half, wy = C[1] + S * (y - half) / half, wz = C[2] + S * (z - half) / half;
-      let dd = 1e9;
-      for (let i = 0; i < els.length; i++) {
-        const e = els[i], dx = wx - e.c[0], dy = wy - e.c[1], dz = wz - e.c[2], v = e.inv;
-        const qx = v[0] * dx + v[1] * dy + v[2] * dz, qy = v[3] * dx + v[4] * dy + v[5] * dz, qz = v[6] * dx + v[7] * dy + v[8] * dz;
-        const ax = qx / e.r[0], ay = qy / e.r[1], az = qz / e.r[2];
-        const k0 = Math.sqrt(ax * ax + ay * ay + az * az), k1 = Math.sqrt((ax / e.r[0]) ** 2 + (ay / e.r[1]) ** 2 + (az / e.r[2]) ** 2);
-        const d = k1 > 1e-9 ? k0 * (k0 - 1) / k1 : -e.mr;                  // a good estimate of the distance to an ellipsoid
-        if (dd > 1e8) dd = d; else { const h = Math.max(k - Math.abs(dd - d), 0) / k; dd = Math.min(dd, d) - h * h * k * 0.25; }     // melt: smooth minimum
-      }
-      if (p.clipY !== undefined) dd = Math.max(dd, p.clipY - wy);
-      f[x + y * res + z * res * res] = ISO - dd * G;
-    }
-    mc.isolation = ISO; mc.update();
-    const n = mc.count * 3, pos = new Float32Array(n), nor = new Float32Array(n);
-    for (let i = 0; i < mc.count; i++) {
-      pos[i * 3] = mc.positionArray[i * 3] * S + C[0]; pos[i * 3 + 1] = mc.positionArray[i * 3 + 1] * S + C[1]; pos[i * 3 + 2] = mc.positionArray[i * 3 + 2] * S + C[2];
-      const nx = mc.normalArray[i * 3], ny = mc.normalArray[i * 3 + 1], nz = mc.normalArray[i * 3 + 2], l = Math.hypot(nx, ny, nz) || 1;
-      nor[i * 3] = nx / l; nor[i * 3 + 1] = ny / l; nor[i * 3 + 2] = nz / l;
-    }
-    const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.BufferAttribute(pos, 3)); g.setAttribute('normal', new THREE.BufferAttribute(nor, 3));
-    g.computeBoundingSphere(); return g;
-  };
+  /* "blob": see blob-geometry.js. The body comes with two numbers per point (aAT: shut-in-ness and thinness), used by shadeBody below. */
+  const blobGeometry = (p) => makeBlobGeometry(THREE, MC)(p);
 
-  /* "relief": soft curls carved into the wax. Not hair: the outline stays smooth and only the light shows the curls. The curl picture (the same one "fur" bump uses)
-     is laid on the body from three sides, because a blob has no UV. "relief": { scale: curls per unit (default 0.75), depth: how deep (default 0.01) } */
-  const reliefize = (mat, R) => {
-    const tex = getFur();
+  /* shadeBody: what the body's baked numbers do, and "relief": soft curls carved into the wax.
+     Not hair: the outline stays smooth and only the light shows the curls. The curl picture (the one "fur" bump uses) is laid on the body from three sides
+     (a blob has no UV), twice at different sizes and turns, mixed by a slow wave, so no tile can be spotted.
+     "relief": { scale: curls per unit (default 0.75), depth: how deep (default 0.01) }; "glowThin": how much more the thin parts glow when lit (default 2.5); "ao": 0-1 how dark the creases get. */
+  const shadeBody = (mat, R, o) => {
+    if (o.paint) { mat.vertexColors = true; mat.needsUpdate = true; }
+    const tex = R ? getFur() : null;
     mat.onBeforeCompile = (sh) => {
-      sh.uniforms.uRel = { value: tex }; sh.uniforms.uRelS = { value: R.scale || 0.75 }; sh.uniforms.uRelD = { value: R.depth ?? 0.01 };
+      sh.uniforms.uPale = { value: new THREE.Color(o.pale || '#ffffff') }; sh.uniforms.uPaleK = { value: o.pale ? (o.paleK ?? 0.85) : 0 }; sh.uniforms.uAO = { value: o.ao ?? 1 }; sh.uniforms.uThin = { value: o.glowThin ?? 2.5 };
       sh.vertexShader = sh.vertexShader
-        .replace('#include <common>', '#include <common>\nvarying vec3 vObj; varying vec3 vObjN;')
-        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvObj = position; vObjN = normal;');
-      sh.fragmentShader = sh.fragmentShader
+        .replace('#include <common>', '#include <common>\nattribute vec3 aAT; varying vec3 vAT; varying vec3 vObj; varying vec3 vObjN;')
+        .replace('#include <begin_vertex>', '#include <begin_vertex>\nvAT = aAT; vObj = position; vObjN = normal;');
+      let fs = sh.fragmentShader
         .replace('#include <common>', `#include <common>
-varying vec3 vObj; varying vec3 vObjN; uniform sampler2D uRel; uniform float uRelS, uRelD;
-float relH(vec3 p, vec3 w) { return w.x * texture2D(uRel, p.zy * uRelS).r + w.y * texture2D(uRel, p.xz * uRelS).r + w.z * texture2D(uRel, p.xy * uRelS).r; }`)
-        .replace('#include <normal_fragment_begin>', `#include <normal_fragment_begin>
+varying vec3 vAT; varying vec3 vObj; varying vec3 vObjN; uniform float uAO, uThin, uPaleK; uniform vec3 uPale;`)
+        .replace('#include <color_fragment>', `#include <color_fragment>
+diffuseColor.rgb = mix(diffuseColor.rgb, uPale, vAT.z * uPaleK); diffuseColor.rgb *= mix(1.0, vAT.x, uAO);`)
+        .replace('#include <emissivemap_fragment>', `#include <emissivemap_fragment>
+totalEmissiveRadiance *= mix(1.0, vAT.x, uAO) * (1.0 + uThin * vAT.y);`);
+      if (R) {
+        sh.uniforms.uRel = { value: tex }; sh.uniforms.uRelS = { value: R.scale || 0.75 }; sh.uniforms.uRelD = { value: R.depth ?? 0.01 }; sh.uniforms.uCalm = { value: R.calm ?? 0 }; sh.uniforms.uFine = { value: R.fine ?? 0 };
+        fs = fs.replace('#include <common>', `#include <common>
+uniform sampler2D uRel; uniform float uRelS, uRelD, uCalm, uFine; float gS = 1.0;
+float curl(vec2 q) {
+  q *= gS;
+  float a = texture2D(uRel, q).r - 0.5;
+  float b = texture2D(uRel, mat2(0.8, -0.6, 0.6, 0.8) * q * 0.71 + vec2(0.37, 0.11)).r - 0.5;
+  float m = 0.5 + 0.5 * sin(q.x * 0.9 + 1.3) * sin(q.y * 0.8 + 0.4);
+  return 0.5 + 1.3 * (m * a + (1.0 - m) * b);
+}
+float relH(vec3 p, vec3 w) { return w.x * curl(p.zy) + w.y * curl(p.xz) + w.z * curl(p.xy); }`)
+          .replace('#include <normal_fragment_begin>', `#include <normal_fragment_begin>
 {
+  gS = uRelS * (1.0 + uFine * vAT.z);
   vec3 w = pow(abs(normalize(vObjN)), vec3(4.0)); w /= (w.x + w.y + w.z);
   vec3 dpx = dFdx(vObj), dpy = dFdy(vObj);
   float h0 = relH(vObj, w), hx = relH(vObj + dpx, w), hy = relH(vObj + dpy, w);
   vec3 sx = dFdx(-vViewPosition), sy = dFdy(-vViewPosition);
   vec3 R1 = cross(sy, normal), R2 = cross(normal, sx); float det = dot(sx, R1);
   vec3 grad = sign(det) * ((hx - h0) * R1 + (hy - h0) * R2);
-  normal = normalize(abs(det) * normal - uRelD * grad);
+  normal = normalize(abs(det) * normal - uRelD * (1.0 - uCalm * vAT.z) * grad);
 }`);
+      }
+      sh.fragmentShader = fs;
     };
     return mat;
   };
@@ -378,18 +391,43 @@ for (int bi = 0; bi < 4; bi++) { if (uBare[bi].w > 0.0 && distance(vObj, uBare[b
         im.count = k; im.instanceMatrix.needsUpdate = true; if (im.instanceColor) im.instanceColor.needsUpdate = true;
         im.frustumCulled = false; group.add(im);
       } else if (p.shape === 'blob') {                            // a soft body of blended ellipsoids, with fur shells (see blobGeometry)
-        const bk = 'blob' + JSON.stringify([p.els, p.k, p.res, p.box, p.clipY]);
-        if (!geoCache.has(bk)) geoCache.set(bk, blobGeometry(p));
-        const geo = geoCache.get(bk), F = p.fur;
-        group.add(new THREE.Mesh(geo, p.relief ? reliefize(m, p.relief) : m));
-        if (F && F.layers) {
+        const bk = 'blob' + JSON.stringify([p.els, p.cuts, p.k, p.res, p.box, p.clipY, p.aoK, p.thinFrom, p.thinTo, p.tones, p.bake, p.paint]), F = p.fur;
+        let geo = geoCache.get(bk);
+        const body = new THREE.Mesh(geo || new THREE.BufferGeometry(), shadeBody(m, p.relief, p));
+        group.add(body);
+        if (!geo) {                                                // "bake": a body built once on a computer and saved as a small file (tools/bake-blob.mjs): the page only loads it
+          const done = (g) => { if (p.paint && !g.attributes.color) g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 3).fill(1), 3)); geoCache.set(bk, g); body.geometry = g; };
+          if (p.bake && typeof fetch === 'function') {
+            if (!bakeWait.has(bk)) bakeWait.set(bk, Promise.all([fetch(p.bake), p.paint ? fetch(p.paint) : null]).then(([r, q]) => r.ok ? Promise.all([r.arrayBuffer(), q && q.ok ? q.arrayBuffer() : null]) : Promise.reject(r.status)).then(([b, c]) => decodeBlob(THREE, b, c))
+              .catch(e => { console.warn('baked body not loaded, building it here:', p.bake, e); return blobGeometry(p); }));
+            bakeWait.get(bk).then(done);
+          } else done(blobGeometry(p));
+        }
+        if (F && F.layers && geo) {
           const base = material(F.material || p.material);
           for (let i = 1; i <= F.layers; i++) { const sm = new THREE.Mesh(geo, furShellMaterial(base, i / F.layers, F, glows, tints)); sm.frustumCulled = false; group.add(sm); }
         }
       } else if (p.shape === 'dots') {                            // small round things: eyes, a nose. "at": [[x,y,z],...], "r"
         const dk = 'dot' + p.r;
         if (!geoCache.has(dk)) geoCache.set(dk, new THREE.SphereGeometry(p.r, 16, 12));
-        p.at.forEach(([x, y, z]) => { const d = new THREE.Mesh(geoCache.get(dk), m); d.position.set(x, y, z); if (p.scale) d.scale.set(...p.scale); group.add(d); });
+        p.at.forEach(([x, y, z]) => { const d = new THREE.Mesh(geoCache.get(dk), m); d.position.set(x, y, z); if (p.scale) d.scale.set(...p.scale); if (p.rot) d.rotation.y = p.rot; group.add(d); });
+      } else if (p.shape === 'tufts') {                           // real curl lumps standing on a body: one instanced mesh, each curl placed, sized and coloured by tools/gen_curls.py
+        const ck = 'curlGeo' + (p.detail ?? 1);
+        if (!geoCache.has(ck)) geoCache.set(ck, curlGeometry(p.detail ?? 1));
+        m.vertexColors = true;
+        if (!bakeWait.has(p.src)) bakeWait.set(p.src, fetch(p.src).then(r => r.ok ? r.arrayBuffer() : Promise.reject(r.status)));
+        bakeWait.get(p.src).then((buf) => {
+          const a = new Float32Array(buf), n = a.length / 12, im = new THREE.InstancedMesh(geoCache.get(ck), m, n);
+          const pos = new THREE.Vector3(), nor = new THREE.Vector3(), sc = new THREE.Vector3(), q = new THREE.Quaternion(), tw = new THREE.Quaternion(), Y = new THREE.Vector3(0, 1, 0), M = new THREE.Matrix4(), col = new THREE.Color();
+          for (let i = 0; i < n; i++) {
+            const o = i * 12, s = a[o + 6], ex = a[o + 8];
+            nor.set(a[o + 3], a[o + 4], a[o + 5]); pos.set(a[o], a[o + 1], a[o + 2]);
+            q.setFromUnitVectors(Y, nor).multiply(tw.setFromAxisAngle(Y, a[o + 7]));
+            M.compose(pos, q, sc.set(s * ex, s * (p.flat ?? 0.9), s / ex)); im.setMatrixAt(i, M);
+            im.setColorAt(i, col.setRGB(a[o + 9], a[o + 10], a[o + 11]));
+          }
+          im.instanceMatrix.needsUpdate = true; im.instanceColor.needsUpdate = true; im.frustumCulled = false; group.add(im);
+        }).catch(e => console.warn('curls not loaded:', p.src, e));
       } else if (p.shape === 'stones') {                          // a ring of crystals around the wick
         p.colors.forEach((c, k) => {
           const sk = 'stone' + (p.size || 0.065);
@@ -433,7 +471,7 @@ for (int bi = 0; bi < 4; bi++) { if (uBare[bi].w > 0.0 && distance(vObj, uBare[b
       loaded = new Promise(res => new GLTF().load(recipe.model, gltf => {
         const m = gltf.scene, box = new THREE.Box3().setFromObject(m), size = box.getSize(new THREE.Vector3()), mid = box.getCenter(new THREE.Vector3());
         const k = (recipe.modelHeight || 1) / size.y;
-        m.scale.setScalar(k); m.position.set(-mid.x * k, -box.min.y * k, -mid.z * k);
+        if (!recipe.modelRaw) { m.scale.setScalar(k); m.position.set(-mid.x * k, -box.min.y * k, -mid.z * k); }   // "modelRaw": already in candle units (tools/gen_relief.py), so it lines up with the photo's camera
         m.rotation.y = recipe.modelTurn || 0;
         m.traverse(o => {
           if (!o.isMesh || !o.material) return;
@@ -450,7 +488,7 @@ for (int bi = 0; bi < 4; bi++) { if (uBare[bi].w > 0.0 && distance(vObj, uBare[b
       group.traverse(o => { if (o.isInstancedMesh) o.dispose(); if (o.material && o.material !== pool.material) o.material.dispose(); });
       pool.material.dispose(); own.forEach(t => t.dispose());
     };
-    return { group, tints, glows, dispose, loaded, info: { wickY: w0.tip, flameX: w0.x || 0, fs: fl.size ?? 1, fw: fl.width ?? 1 }, turn: recipe.turn || 0, size: recipe.size || 1 };
+    return { group, tints, glows, dispose, loaded, info: { wickY: w0.tip, flameX: w0.x || 0, fs: fl.size ?? 1, fw: fl.width ?? 1, light: recipe.flameLight ?? 1 }, turn: recipe.turn || 0, turnLimit: recipe.turnLimit, size: recipe.size || 1 };
   }
 
   return { build, canvasTexture, setLoader: L => { GLTF = L; }, setMarching: C => { MC = C; } };

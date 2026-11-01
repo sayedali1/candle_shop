@@ -50,7 +50,9 @@ const views = { front: [0, 0.12], three: [0.7, 0.3], top: [0.4, 1.1] };
 
 function setRecipe(recipe) {
   if (candle) { scene.remove(candle.group); candle.group.traverse(o => { if (o.geometry) o.geometry.dispose(); }); }
+  const t0 = performance.now();
   candle = builder.build(recipe);
+  buildMs = performance.now() - t0;
   candle.group.rotation.y = 0; scene.add(candle.group);
 }
 
@@ -83,16 +85,41 @@ function frame() {
   candle.glows.forEach(({ m, k }) => { m.emissiveIntensity = k * burn; });
   flameLight.position.set(tipX, tipY + 0.4 * s, 0.3 * s);
   flameLight.intensity = state.light === 'studio' ? 0 : 5 * (1 + flick * 1.2) * amount;
-  const r = dist * (candle.size > 1.1 ? 1.1 : 1);
-  camera.position.set(Math.sin(yaw) * Math.cos(pitch) * r, 0.55 + Math.sin(pitch) * r, Math.cos(yaw) * Math.cos(pitch) * r);
-  camera.lookAt(0, 0.5, 0);
+  if (photoView) {                                                  // the camera the photo was taken with (found by tools/fit_pose.py): the 3D lines up with the photo exactly
+    const c = photoCam, T = c.target, rr = c.dist;
+    camera.position.set(T[0] + rr * Math.sin(c.yaw) * Math.cos(c.pitch), T[1] + rr * Math.sin(c.pitch), T[2] + rr * Math.cos(c.yaw) * Math.cos(c.pitch));
+    camera.lookAt(T[0], T[1], T[2]);
+    if (camera.fov !== c.fov) { camera.fov = c.fov; camera.updateProjectionMatrix(); }
+  } else {
+    if (camera.fov !== 30) { camera.fov = 30; camera.updateProjectionMatrix(); }
+    const r = dist * (candle.size > 1.1 ? 1.1 : 1);
+    camera.position.set(Math.sin(yaw) * Math.cos(pitch) * r, 0.55 + Math.sin(pitch) * r, Math.cos(yaw) * Math.cos(pitch) * r);
+    camera.lookAt(0, 0.5, 0);
+  }
   renderer.render(scene, camera);
+}
+/* photo view: the picture and the 3D share one frame with the photo's own shape, so a point in the photo is the same point in the 3D */
+let photoView = false, photoCam = null, cropRect = null;
+function layoutPhoto() {
+  const v = canvas.parentElement, ov = $('ov'), els = [canvas, ov];
+  if (photoView && ov.naturalWidth) {
+    const W = v.clientWidth, H = v.clientHeight, nw = ov.naturalWidth, nh = ov.naturalHeight;
+    const cr = cropRect || [0, 0, nw, nh], cw = cr[2] - cr[0], ch = cr[3] - cr[1], k = Math.min(W / cw, H / ch);
+    const px = (e, l, t, w, h) => { e.style.inset = 'auto'; e.style.left = l + 'px'; e.style.top = t + 'px'; e.style.width = w + 'px'; e.style.height = h + 'px'; };
+    const l0 = (W - cw * k) / 2, t0 = (H - ch * k) / 2;
+    px(canvas, l0, t0, cw * k, ch * k);                                    // the 3D is drawn only for the part of the photo we look at ("crop": photo pixels)...
+    px(ov, l0 - cr[0] * k, t0 - cr[1] * k, nw * k, nh * k);                // ...and the photo is laid under the same frame
+    v.style.overflow = 'hidden'; ov.style.objectFit = 'fill';
+    if (cropRect) camera.setViewOffset(nw, nh, cr[0], cr[1], cw, ch); else camera.clearViewOffset();
+    renderer.setPixelRatio(cropRect ? 1 : Math.min(devicePixelRatio || 1, 2));
+  } else { els.forEach(e => { e.style.inset = ''; e.style.left = e.style.top = e.style.width = e.style.height = ''; }); ov.style.objectFit = 'contain'; camera.clearViewOffset(); }
+  resize();
 }
 function resize() {
   const w = canvas.clientWidth, h = canvas.clientHeight; if (!w || !h) return;
-  renderer.setSize(w, h, false); camera.aspect = w / h; camera.updateProjectionMatrix();
+  renderer.setSize(w, h, false); camera.aspect = camera.view && camera.view.enabled ? camera.view.fullWidth / camera.view.fullHeight : w / h; camera.updateProjectionMatrix();
 }
-addEventListener('resize', resize); new ResizeObserver(resize).observe(canvas); resize();
+addEventListener('resize', layoutPhoto); new ResizeObserver(layoutPhoto).observe(canvas.parentElement); resize();
 
 /* ---------- controls ---------- */
 let drag = null;
@@ -103,11 +130,100 @@ canvas.addEventListener('wheel', e => { e.preventDefault(); dist = Math.min(9, M
 document.querySelectorAll('[data-view]').forEach(b => b.addEventListener('click', () => { [yaw, pitch] = views[b.dataset.view]; }));
 $('lit').addEventListener('click', e => { state.lit = !state.lit; e.target.setAttribute('aria-pressed', state.lit); });
 $('spin').addEventListener('click', e => { state.spin = !state.spin; e.target.setAttribute('aria-pressed', state.spin); });
+$('pv').addEventListener('click', () => { photoView = !photoView; $('pv').setAttribute('aria-pressed', photoView); if (photoView) { $('ovo').value = 0; placeOverlay(); } layoutPhoto(); });
 $('light').addEventListener('change', e => { state.light = e.target.value; lighting(); });
 $('save').addEventListener('click', () => { const a = document.createElement('a'); a.href = canvas.toDataURL('image/png'); a.download = 'candle-lab.png'; a.click(); });
 $('copy').addEventListener('click', () => navigator.clipboard && navigator.clipboard.writeText($('json').value));
 $('file').addEventListener('change', e => { const f = e.target.files[0]; if (f) showRef(URL.createObjectURL(f)); });
-function showRef(src) { $('ref').innerHTML = ''; const i = new Image(); i.src = src; i.alt = 'reference photo'; $('ref').append(i); }
+function showRef(src) { $('ref').innerHTML = ''; $('ov').onload = layoutPhoto; const i = new Image(); i.src = src; i.alt = 'reference photo'; $('ref').append(i); $('ov').src = src; $('ovc').classList.add('on'); }
+
+/* the photo laid over the 3D: slide the see-through bar, match size and place, or switch on "differences" (same = black) */
+function placeOverlay() {
+  const o = $('ov'), d = $('ovd').checked;
+  o.style.opacity = d ? 1 : $('ovo').value / 100;
+  o.style.mixBlendMode = d ? 'difference' : 'normal';
+  o.style.transform = `translate(${$('ovx').value}%, ${$('ovy').value}%) scale(${$('ovs').value / 100})`;
+}
+['ovo', 'ovs', 'ovx', 'ovy', 'ovd'].forEach(id => $(id).addEventListener('input', placeOverlay));
+
+/* ---------- checks: the things a person spots at once, done by the program ----------
+   1. the silhouette from 8 sides: more than one piece means a gap or a part floating in the air
+   2. cost: draw calls and triangles of this candle, and how long it took to build
+   3. size: height and width in candle units */
+const maskRT = new THREE.WebGLRenderTarget(160, 200);
+const maskCam = new THREE.PerspectiveCamera(30, 0.8, 0.1, 50);
+const maskMat = new THREE.MeshBasicMaterial({ color: 0xffffff, toneMapped: false });
+let buildMs = 0;
+function pieces(yawA) {
+  const r = 4.6 * (candle.size > 1.1 ? 1.1 : 1);
+  maskCam.position.set(Math.sin(yawA) * r, 0.7, Math.cos(yawA) * r); maskCam.lookAt(0, 0.5, 0);
+  renderer.setRenderTarget(maskRT); renderer.clear(); renderer.render(scene, maskCam); renderer.setRenderTarget(null);
+  const W = 160, H = 200, px = new Uint8Array(W * H * 4); renderer.readRenderTargetPixels(maskRT, 0, 0, W, H, px);
+  const on = new Uint8Array(W * H); for (let i = 0; i < W * H; i++) on[i] = px[i * 4] > 60 ? 1 : 0;
+  const found = [];
+  for (let s = 0; s < W * H; s++) {
+    if (!on[s]) continue;
+    let n = 0, top = s, st = [s]; on[s] = 0;
+    while (st.length) {
+      const p = st.pop(); n++; if (p < top) top = p;
+      const x = p % W, nb = [x > 0 ? p - 1 : -1, x < W - 1 ? p + 1 : -1, p - W, p + W];
+      for (const q of nb) if (q >= 0 && q < W * H && on[q]) { on[q] = 0; st.push(q); }
+    }
+    found.push(n);
+  }
+  return found.sort((a, b) => b - a);
+}
+function runChecks() {
+  if (!candle) return;
+  const out = [], bad = t => `<span class="bad">${t}</span>`, ok = t => `<span class="ok">${t}</span>`;
+  const hide = []; scene.traverse(o => { if ((o.isSprite || o === table || o === flame) && o.visible) { o.visible = false; hide.push(o); } });
+  const bg = scene.background, ov = scene.overrideMaterial, ca = renderer.getClearAlpha(), cc = renderer.getClearColor(new THREE.Color());
+  scene.background = null; scene.overrideMaterial = maskMat; renderer.setClearColor(0x000000, 1);
+  const names = ['front', 'front-right', 'right', 'back-right', 'back', 'back-left', 'left', 'front-left'], split = [];
+  names.forEach((nm, i) => { const p = pieces(i * Math.PI / 4).filter(n => n >= 3); if (p.length > 1) split.push(`${nm}: ${p.length} pieces (${p.join(', ')} px)`); });
+  scene.background = bg; scene.overrideMaterial = ov; renderer.setClearColor(cc, ca); hide.forEach(o => { o.visible = true; });
+  out.push(split.length ? bad('<b>Gap or floating part</b>') + '\n' + split.join('\n') : ok('<b>Silhouette:</b> one piece from all 8 sides'));
+
+  let meshes = 0, t = 0; candle.group.traverse(o => { if (o.isMesh) { meshes++; const g = o.geometry; t += (g.index ? g.index.count : g.attributes.position.count) / 3; } });
+  const os = outlineScore();
+  if (os) out.push(`<b>Outline vs photo:</b> fills ${(os.cover * 100).toFixed(0)}% of the part that is surely this figure, ${(os.spill * 100).toFixed(0)}% of the 3D sticks out of the photo's figure. ` + (os.cover > 0.93 && os.spill < 0.06 ? ok('close') : bad('not close yet: fix the biggest difference, then check again')));
+  out.push(`<b>Cost:</b> ${meshes} meshes, ${Math.round(t / 1000)}k triangles. ` + (meshes > 40 || t > 60000 ? bad('heavy for a phone shelf') : ok('fine for a phone shelf')));
+  out.push(`<b>Build time here:</b> ${Math.round(buildMs)} ms ` + (buildMs > 120 ? bad('(a phone is 3 to 5 times slower: it will freeze the page, consider baking it to a .glb)') : ok('(a phone is 3 to 5 times slower)')));
+  const box = new THREE.Box3().setFromObject(candle.group);
+  const sz = box.getSize(new THREE.Vector3());
+  out.push(`<b>Size:</b> ${sz.y.toFixed(2)} tall, ${sz.x.toFixed(2)} wide, ${sz.z.toFixed(2)} deep (about 1 tall is normal)`);
+  out.push('<b>You still judge by eye:</b> does it read as carved wax, not a real animal? lit and unlit? from above? Lay the photo over it and look for the biggest difference.');
+  $('checks').innerHTML = out.join('\n');
+}
+$('check').addEventListener('click', runChecks);
+
+/* the outline check: how well does the 3D fill the part of the photo that is surely this figure (care.png), and how much sticks out of the photo's figure (union.png)?
+   Needs the photo's camera (?photocam=tools/fit/pose.json) and the masks from tools/photo_mask.py (?masks=tools/fit/) */
+let masks = null;
+const PW = 163, PH = 216, phRT = new THREE.WebGLRenderTarget(PW, PH);
+async function loadMasks(dir) {
+  const grab = async (f) => { const im = new Image(); im.src = dir + f; await im.decode(); const c = document.createElement('canvas'); c.width = PW; c.height = PH; const g = c.getContext('2d'); g.drawImage(im, 0, 0, PW, PH); const d = g.getImageData(0, 0, PW, PH).data; const a = new Uint8Array(PW * PH); for (let i = 0; i < a.length; i++) a[i] = d[i * 4] > 127 ? 1 : 0; return a; };
+  masks = { union: await grab('union.png'), care: await grab('care.png') };
+}
+function outlineScore() {
+  if (!masks || !photoCam || !candle) return null;
+  const hide = []; scene.traverse(o => { if ((o.isSprite || o === table || o === flame) && o.visible) { o.visible = false; hide.push(o); } });
+  const bg = scene.background, ov = scene.overrideMaterial, ca = renderer.getClearAlpha(), cc = renderer.getClearColor(new THREE.Color());
+  scene.background = null; scene.overrideMaterial = maskMat; renderer.setClearColor(0x000000, 1);
+  const c = photoCam, T = c.target; maskCam.fov = c.fov; maskCam.aspect = PW / PH; maskCam.updateProjectionMatrix();
+  maskCam.position.set(T[0] + c.dist * Math.sin(c.yaw) * Math.cos(c.pitch), T[1] + c.dist * Math.sin(c.pitch), T[2] + c.dist * Math.cos(c.yaw) * Math.cos(c.pitch)); maskCam.lookAt(T[0], T[1], T[2]);
+  renderer.setRenderTarget(phRT); renderer.clear(); renderer.render(scene, maskCam); renderer.setRenderTarget(null);
+  const px = new Uint8Array(PW * PH * 4); renderer.readRenderTargetPixels(phRT, 0, 0, PW, PH, px);
+  scene.background = bg; scene.overrideMaterial = ov; renderer.setClearColor(cc, ca); hide.forEach(o => { o.visible = true; });
+  maskCam.fov = 30; maskCam.aspect = 0.8; maskCam.updateProjectionMatrix();
+  let care = 0, miss = 0, rend = 0, out = 0;
+  for (let y = 0; y < PH; y++) for (let x = 0; x < PW; x++) {
+    const r = px[((PH - 1 - y) * PW + x) * 4] > 60 ? 1 : 0, i = y * PW + x;
+    if (masks.care[i]) { care++; if (!r) miss++; }
+    if (r) { rend++; if (!masks.union[i]) out++; }
+  }
+  return { cover: 1 - miss / care, spill: out / Math.max(rend, 1) };
+}
 
 let timer = null;
 $('json').addEventListener('input', () => {
@@ -125,9 +241,13 @@ async function load(name) {
   $('pick').innerHTML = names.map(n => `<option>${n}</option>`).join('');
   $('pick').addEventListener('change', () => load($('pick').value));
   const q = new URLSearchParams(location.search);
-  if (q.get('recipe') && names.includes(q.get('recipe'))) $('pick').value = q.get('recipe');
+  if (q.get('recipe')) { if (!names.includes(q.get('recipe'))) $('pick').insertAdjacentHTML('beforeend', `<option>${q.get('recipe')}</option>`); $('pick').value = q.get('recipe'); }
   if (q.get('ref')) showRef(q.get('ref'));
   if (q.get('light')) { state.light = q.get('light'); $('light').value = state.light; }
   if (q.get('lit') === '0') { state.lit = false; amount = 0; $('lit').setAttribute('aria-pressed', false); }
+  if (q.get('crop')) cropRect = q.get('crop').split(',').map(Number);
+  if (q.get('photocam')) { try { photoCam = (await (await fetch(q.get('photocam'))).json()).camera; $('pv').hidden = false; } catch (e) { /* no photo camera */ } }
+  if (q.get('masks')) { try { await loadMasks(q.get('masks')); } catch (e) { /* no masks */ } }
   lighting(); await load($('pick').value); frame();
+  if (q.get('photoview') === '1' && photoCam) $('pv').click();
 })();
