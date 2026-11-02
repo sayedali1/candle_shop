@@ -1,0 +1,18 @@
+{
+ "camera": {
+  "yaw": 0.0,
+  "pitch": 0.75,
+  "fov": 40,
+  "target": [
+   0,
+   0.1,
+   0
+  ],
+  "dist": 1.6,
+  "u0": 0.0,
+  "v0": 0.0,
+  "roll": 0.0
+ },
+ "blocks": [],
+ "note": "ESTIMATED camera for the heart box (no round rim to fit from): front view matches by construction; only the depth feel when turned depends on it"
+}

@@ -1,0 +1,5 @@
+{"photo": "brief/ref-knot.jpg",
+ "objects": {"tall": {"foot": {"sides": [[449, 978], [624, 978]], "front": 1007},
+                      "top": {"sides": [[455, 423], [647, 423]], "front": 427, "back": 419}},
+             "short": {"foot": {"sides": [[266, 1045], [437, 1045]], "front": 1072},
+                       "top": {"sides": [[257, 554], [420, 554]], "front": 562, "back": 547}}}}
