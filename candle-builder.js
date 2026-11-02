@@ -236,6 +236,12 @@ export function makeBuilder(THREE) {
         }
         g.computeVertexNormals();
       }
+      if (p.bend) {                                              // a body whose middle wanders: "bend" is [[height, x shift], ...] (sorted by height), each ring moved sideways by its shift
+        const pa = g.attributes.position, B = p.bend;
+        const at = (y) => { if (y <= B[0][0]) return B[0][1]; for (let k = 1; k < B.length; k++) if (y <= B[k][0]) { const t = (y - B[k - 1][0]) / (B[k][0] - B[k - 1][0]); return B[k - 1][1] + t * (B[k][1] - B[k - 1][1]); } return B[B.length - 1][1]; };
+        for (let i = 0; i < pa.count; i++) pa.setX(i, pa.getX(i) + at(pa.getY(i)));
+        g.computeVertexNormals();
+      }
       return g;
     },
     cylinder: (p) => new THREE.CylinderGeometry(p.r, p.rb ?? p.r, p.h, p.segments || 64, 1, !!p.open, p.thetaStart, p.thetaLength),
@@ -250,17 +256,39 @@ export function makeBuilder(THREE) {
       for (let i = 0; i < P.count; i++) U.setXY(i, (P.getX(i) + L) / (2 * L), (P.getZ(i) + p.r) / (2 * p.r));   // the top carries the whole picture once
       return g;
     },
-    /* a twisted wax rope tied round a candle: a ring of radius "r" (lying flat), "tube" thick, made of "strands" (3) twisted "twist" times round the ring, grooves "depth" deep, "around" points round the tube (16; more for many strands); "flat" below 1 squashes it into a band that stands out less than it is tall.
+    /* a twisted wax rope tied round a candle: a ring of radius "r" (lying flat), "tube" thick, made of "strands" (3) twisted "twist" times round the ring, grooves "depth" deep, "around" points round the tube (16; more for many strands); "flat" below 1 squashes it into a band that stands out less than it is tall; "swell" makes it thicker toward +x (0.1 = 10%); "square" below 1 boxes its cross-section.
        A piece instead of a ring (the crossing strand of a knot): "start" and "arc" in radians (0 = right, 1.57 = front, growing toward the left), its ends tapered; "rise" lifts it from start to end */
     rope: (p) => {
       const U = p.segments || 200, V = p.around || 16, S = p.strands || 3, T = p.twist ?? 40, D = p.depth ?? 0.14, A = p.arc ?? Math.PI * 2, part = A < 6.28, pos = [], idx = [];
       for (let i = 0; i <= U; i++) {
-        const u = i / U, th = (p.start || 0) + u * A, c = Math.cos(th), s = Math.sin(th), y0 = (p.rise || 0) * u;
+        const u = i / U, th = (p.start || 0) + u * A, c = Math.cos(th), s = Math.sin(th), e = Math.max(0, (u - 0.7) / 0.3), y0 = (p.rise || 0) * u + (p.lift || 0) * e * e * (3 - 2 * e);   // "lift": the last 30% of a piece rises that much
         const taper = part ? Math.sqrt(Math.min(1, Math.min(u, 1 - u) / 0.15)) : 1;
         for (let j = 0; j <= V; j++) {
-          const ph = j / V * Math.PI * 2, rr = taper * p.tube * (1 - D + D * Math.abs(Math.cos((S * ph + T * th) / 2)));   // each strand a round bulge, a groove between
-          const out = p.r + rr * Math.cos(ph) * (p.flat ?? 1);
-          pos.push(out * c, y0 + rr * Math.sin(ph), out * s);
+          const ph = j / V * Math.PI * 2, rr = taper * p.tube * (1 + (p.swell || 0) * c) * (1 - D + D * Math.abs(Math.cos((S * ph + T * th) / 2)));   // each strand a round bulge, a groove between; "swell": thicker toward +x
+          const E = p.square ?? 1, co = Math.sign(Math.cos(ph)) * Math.abs(Math.cos(ph)) ** E, si = Math.sign(Math.sin(ph)) * Math.abs(Math.sin(ph)) ** E;   // "square" below 1: a boxier cross-section, so pressed bands meet along a line
+          const out = p.r - (p.tuck || 0) * (1 - taper) * p.tube + rr * co * (p.flat ?? 1);   // "tuck": a piece's ends also sink into the body (they go under another band)
+          pos.push(out * c, y0 + rr * si, out * s);
+        }
+      }
+      for (let i = 0; i < U; i++) for (let j = 0; j < V; j++) { const a = i * (V + 1) + j, b = a + V + 1; idx.push(a, a + 1, b, b, a + 1, b + 1); }
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
+      return g;
+    },
+    /* a wax rope along a traced path (a knot): "points" [[x, y, z, thickness], ...] on its middle line, smoothed through. Its cross-section keeps facing out from the
+       candle's middle line, so "strands" ridges run along it ("twist": turns of the ridges per unit of length), "square" boxes it (as for "rope"), and its two ends taper and sink in */
+    path: (p) => {
+      const P = p.points.map(q => new THREE.Vector3(q[0], q[1], q[2])), curve = new THREE.CatmullRomCurve3(P, false, 'centripetal');
+      const U = p.segments || 400, V = p.around || 48, S = p.strands || 14, D = p.depth ?? 0.12, E = p.square ?? 1, pos = [], idx = [];
+      const rad = (u) => { const f = u * (p.points.length - 1), i = Math.min(Math.floor(f), p.points.length - 2), t = f - i; return p.points[i][3] * (1 - t) + p.points[i + 1][3] * t; };
+      const len = curve.getLength();
+      for (let i = 0; i <= U; i++) {
+        const u = i / U, c = curve.getPointAt(u), T = curve.getTangentAt(u);
+        const n = new THREE.Vector3(c.x, 0, c.z).normalize(); n.addScaledVector(T, -n.dot(T)).normalize(); const b = new THREE.Vector3().crossVectors(T, n).normalize();
+        const taper = Math.sqrt(Math.min(1, Math.min(u, 1 - u) / 0.08)), r0 = rad(u) * taper, sink = (1 - taper) * rad(u);
+        for (let j = 0; j <= V; j++) {
+          const ph = j / V * Math.PI * 2, rr = r0 * (1 - D + D * Math.abs(Math.cos((S * ph + (p.twist || 0) * u * len * Math.PI * 2) / 2)));
+          const co = Math.sign(Math.cos(ph)) * Math.abs(Math.cos(ph)) ** E, si = Math.sign(Math.sin(ph)) * Math.abs(Math.sin(ph)) ** E;
+          pos.push(c.x + n.x * (rr * co - sink) + b.x * rr * si, c.y + n.y * (rr * co - sink) + b.y * rr * si, c.z + n.z * (rr * co - sink) + b.z * rr * si);
         }
       }
       for (let i = 0; i < U; i++) for (let j = 0; j < V; j++) { const a = i * (V + 1) + j, b = a + V + 1; idx.push(a, a + 1, b, b, a + 1, b + 1); }
