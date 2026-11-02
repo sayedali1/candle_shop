@@ -117,6 +117,24 @@ export function makeBuilder(THREE) {
 
   /* ---------- textures a material can ask for ---------- */
   const painters = {
+    /* wax poured in two colours and stirred: a base colour with pale ribbons, and soft shade where things stand on it. "shadows": [[x, z, r]] in the part's own units, "a" and "r" its size */
+    marble: (t) => canvasTexture(1024, 512, (g, w, h) => {
+      g.fillStyle = t.base || '#5aa3d8'; g.fillRect(0, 0, w, h);
+      const veins = t.veins || ['#e8f4fa', '#2f7fc0', '#bfe0f0'];
+      g.lineCap = 'round';
+      for (let i = 0; i < (t.count ?? 70); i++) {
+        let x = Math.random() * w, y = Math.random() * h, an = Math.random() * 6.3;
+        g.strokeStyle = veins[i % veins.length]; g.globalAlpha = 0.08 + Math.random() * 0.28; g.lineWidth = 3 + Math.random() * 26;
+        g.beginPath(); g.moveTo(x, y);
+        for (let k = 0; k < 8; k++) { an += (Math.random() - 0.5) * 1.5; const nx = x + Math.cos(an) * 70, ny = y + Math.sin(an) * 40; g.quadraticCurveTo(x + Math.cos(an + 0.8) * 40, y + Math.sin(an + 0.8) * 30, nx, ny); x = nx; y = ny; }
+        g.stroke();
+      }
+      g.globalAlpha = 1;
+      (t.shadows || []).forEach(([sx, sz, sr]) => {
+        const L = t.a + t.r, cx = (sx + L) / (2 * L) * w, cy = (1 - (sz + t.r) / (2 * t.r)) * h, rx = sr / (2 * L) * w, ry = sr / (2 * t.r) * h;
+        g.save(); g.translate(cx, cy); g.scale(rx, ry); const gr = g.createRadialGradient(0, 0, 0.45, 0, 0, 1); gr.addColorStop(0, 'rgba(10,40,80,0.55)'); gr.addColorStop(1, 'rgba(10,40,80,0)'); g.fillStyle = gr; g.beginPath(); g.arc(0, 0, 1, 0, 7); g.fill(); g.restore();
+      });
+    }),
     /* a glazed cup: glaze on the top, bare clay below, with speckles */
     ceramic: (t) => canvasTexture(512, 256, (g, w, h) => {
       g.fillStyle = t.clay || '#d8aa8c'; g.fillRect(0, 0, w, h);
@@ -213,6 +231,17 @@ export function makeBuilder(THREE) {
       return g;
     },
     cylinder: (p) => new THREE.CylinderGeometry(p.r, p.rb ?? p.r, p.h, p.segments || 64, 1, !!p.open, p.thetaStart, p.thetaLength),
+    /* an oval tray or slab with straight sides and round ends: "a" half the straight part, "r" the end radius, "h" height, "bevel", "hole" (a rim this wide, open in the middle) */
+    stadium: (p) => {
+      const outline = (o, a, r) => { o.moveTo(-a, -r); o.lineTo(a, -r); o.absarc(a, 0, r, -Math.PI / 2, Math.PI / 2, false); o.lineTo(-a, r); o.absarc(-a, 0, r, Math.PI / 2, Math.PI * 1.5, false); return o; };
+      const sh = outline(new THREE.Shape(), p.a, p.r), bv = p.bevel ?? 0;
+      if (p.hole) sh.holes.push(outline(new THREE.Path(), p.a, p.r - p.hole));
+      const g = new THREE.ExtrudeGeometry(sh, { depth: p.h - 2 * bv, bevelEnabled: bv > 0, bevelSize: bv, bevelThickness: bv, bevelOffset: -bv, bevelSegments: 3, curveSegments: 28 });
+      g.rotateX(-Math.PI / 2); g.translate(0, bv, 0);
+      const P = g.attributes.position, U = g.attributes.uv, L = p.a + p.r;
+      for (let i = 0; i < P.count; i++) U.setXY(i, (P.getX(i) + L) / (2 * L), (P.getZ(i) + p.r) / (2 * p.r));   // the top carries the whole picture once
+      return g;
+    },
     disc: (p) => new THREE.CircleGeometry(p.r, 48).rotateX(-Math.PI / 2),
     torus: (p) => new THREE.TorusGeometry(p.r, p.tube, 10, 64).rotateX(Math.PI / 2),
     capsule: (p) => p.fuzz ? fuzzGeo(capsuleLathe(p), p.fuzz) : new THREE.CapsuleGeometry(p.r, p.len, 8, 24),
@@ -350,6 +379,13 @@ for (int bi = 0; bi < 4; bi++) { if (uBare[bi].w > 0.0 && distance(vObj, uBare[b
       return mesh;
     };
 
+    /* "inst": [[x, y, z, turn, size], ...] draws one shape many times in a single draw call: a group of small figures stays cheap on a phone */
+    const placeMany = (im, list, sc) => {
+      const M = new THREE.Matrix4(), q = new THREE.Quaternion(), Y = new THREE.Vector3(0, 1, 0), P = new THREE.Vector3(), S = new THREE.Vector3();
+      list.forEach(([x, y, z, yaw = 0, s = 1], i) => { M.compose(P.set(x, y, z), q.setFromAxisAngle(Y, yaw), sc ? S.set(sc[0] * s, sc[1] * s, sc[2] * s) : S.setScalar(s)); im.setMatrixAt(i, M); });
+      im.instanceMatrix.needsUpdate = true; im.frustumCulled = false; return im;
+    };
+
     (recipe.parts || []).forEach((p) => {
       const m = material(p.material);
       if (p.shape === 'spiral') {                                 // raised spirals on the top of the wax (a triskele when count is 3)
@@ -393,7 +429,7 @@ for (int bi = 0; bi < 4; bi++) { if (uBare[bi].w > 0.0 && distance(vObj, uBare[b
       } else if (p.shape === 'blob') {                            // a soft body of blended ellipsoids, with fur shells (see blobGeometry)
         const bk = 'blob' + JSON.stringify([p.els, p.cuts, p.k, p.res, p.box, p.clipY, p.aoK, p.thinFrom, p.thinTo, p.tones, p.bake, p.paint]), F = p.fur;
         let geo = geoCache.get(bk);
-        const body = new THREE.Mesh(geo || new THREE.BufferGeometry(), shadeBody(m, p.relief, p));
+        const body = p.inst ? placeMany(new THREE.InstancedMesh(geo || new THREE.BufferGeometry(), shadeBody(m, p.relief, p), p.inst.length), p.inst) : new THREE.Mesh(geo || new THREE.BufferGeometry(), shadeBody(m, p.relief, p));
         group.add(body);
         if (!geo) {                                                // "bake": a body built once on a computer and saved as a small file (tools/bake-blob.mjs): the page only loads it
           const done = (g) => { if (p.paint && !g.attributes.color) g.setAttribute('color', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 3).fill(1), 3)); geoCache.set(bk, g); body.geometry = g; };
@@ -410,6 +446,7 @@ for (int bi = 0; bi < 4; bi++) { if (uBare[bi].w > 0.0 && distance(vObj, uBare[b
       } else if (p.shape === 'dots') {                            // small round things: eyes, a nose. "at": [[x,y,z],...], "r"
         const dk = 'dot' + p.r;
         if (!geoCache.has(dk)) geoCache.set(dk, new THREE.SphereGeometry(p.r, 16, 12));
+        if (p.inst) { group.add(placeMany(new THREE.InstancedMesh(geoCache.get(dk), m, p.inst.length), p.inst, p.scale)); return; }   // many of them, one draw call
         p.at.forEach(([x, y, z]) => { const d = new THREE.Mesh(geoCache.get(dk), m); d.position.set(x, y, z); if (p.scale) d.scale.set(...p.scale); if (p.rot) d.rotation.y = p.rot; group.add(d); });
       } else if (p.shape === 'tufts') {                           // real curl lumps standing on a body: one instanced mesh, each curl placed, sized and coloured by tools/gen_curls.py
         const ck = 'curlGeo' + (p.detail ?? 1);
@@ -488,7 +525,7 @@ for (int bi = 0; bi < 4; bi++) { if (uBare[bi].w > 0.0 && distance(vObj, uBare[b
       group.traverse(o => { if (o.isInstancedMesh) o.dispose(); if (o.material && o.material !== pool.material) o.material.dispose(); });
       pool.material.dispose(); own.forEach(t => t.dispose());
     };
-    return { group, tints, glows, dispose, loaded, info: { wickY: w0.tip, flameX: w0.x || 0, fs: fl.size ?? 1, fw: fl.width ?? 1, light: recipe.flameLight ?? 1 }, turn: recipe.turn || 0, turnLimit: recipe.turnLimit, size: recipe.size || 1 };
+    return { group, tints, glows, dispose, loaded, info: { wickY: w0.tip, flameX: w0.x || 0, fs: fl.size ?? 1, fw: fl.width ?? 1, light: recipe.flameLight ?? 1, lightPhone: recipe.flameLightPhone ?? 1 }, turn: recipe.turn || 0, turnLimit: recipe.turnLimit, size: recipe.size || 1 };
   }
 
   return { build, canvasTexture, setLoader: L => { GLTF = L; }, setMarching: C => { MC = C; } };

@@ -4,7 +4,7 @@
    DRAFT: shapes, colors and light are placeholders until the brand stage.
    Scrolling the hero turns the candle and moves the camera closer. */
 
-import { makeBuilder, customize } from './candle-builder.js?v=22';
+import { makeBuilder, customize } from './candle-builder.js?v=26';
 
 const hero = document.getElementById('hero');
 const stage = document.getElementById('stage');
@@ -456,7 +456,8 @@ async function start() {
     const c = builder.build(recipes[i % recipes.length]);
     c.g = c.group; c.el = item.querySelector('.img'); c.lit = 0;    // the slot is the picture box of the item
     c.g.visible = false; (slotsOn ? sScene : shelfGroup).add(c.g);
-    c.size = recipes[i % recipes.length].shelfSize ?? c.size;        // how big it stands on the shelf, apart from the units it was built in
+    const rcp = recipes[i % recipes.length]; if (rcp.shelfTilt) { c.g.rotation.x = rcp.shelfTilt; c.info.wickY *= Math.cos(rcp.shelfTilt); }   // a low, wide candle leans toward the viewer, so its top shows
+    c.size = rcp.shelfSize ?? c.size; c.lift = rcp.shelfLift || 0;   // a leaning candle's front swings down: lift it back onto the shelf line        // how big it stands on the shelf, apart from the units it was built in
     c.swayAmt = 0; c.dLit = 0; c.dSway = 0; c.hadFlame = false; c.dirty = true;   // what was last drawn into the slot
     if (c.loaded) c.loaded.then(() => { c.dirty = true; });                         // a candle from a 3D file arrives a moment later: draw it again then
     return c;
@@ -513,7 +514,7 @@ async function start() {
     const ppu = cssH / (2 * Math.tan(Math.PI / 12) * SHELF_D);        // css pixels per world unit at the candle's distance
     const sc = c.ch * 0.74 / ppu * (0.9 + 0.1 * c.lit) * c.size;       // the candle is 1 unit tall: this is its height in world units
     c.g.visible = true; c.g.scale.setScalar(sc);
-    c.g.position.set(0, (cssH / 2 - (pt + c.ch + 4 - 10 * c.lit)) / ppu, 0);   // sits a little below the slot (on the shelf), lifted when lit
+    c.g.position.set(0, (cssH / 2 - (pt + c.ch + 4 - 10 * c.lit)) / ppu + c.lift * sc, 0);   // sits a little below the slot (on the shelf), lifted when lit
     c.g.rotation.y = c.turn + (reduce ? 0 : Math.sin(t * 0.4 + i) * Math.min(0.25, c.turnLimit ?? 1) * c.swayAmt);
     const dim = 0.62 + 0.38 * c.lit;
     c.tints.forEach(({ m, base }) => m.color.copy(base).multiplyScalar(dim));
@@ -532,7 +533,7 @@ async function start() {
       sEmber.position.set(fx + 0.0055 * sc, fy, 0); sEmber.scale.setScalar(L * sc);
       shelfLight.position.set(fx, fy + 0.4 * sc, 0.3 * sc);
     }
-    shelfLight.intensity = isFlame ? FLAME_LIGHT * (1 + flick * 1.2) * fAmt : 0;
+    shelfLight.intensity = isFlame ? FLAME_LIGHT * (c.info.lightPhone) * (1 + flick * 1.2) * fAmt : 0;
     sr.render(sScene, sCam);
     c.ctx.clearRect(0, 0, W, H); c.ctx.drawImage(sr.domElement, 0, 0);
     c.g.visible = false;
@@ -596,7 +597,7 @@ async function start() {
       if (!c.g.visible) return;
       c.lit += ((item.classList.contains('is-active') ? 1 : 0) - c.lit) * (reduce ? 1 : k);
       c.g.scale.setScalar(r.height * 0.74 / ppu * (0.9 + 0.1 * c.lit) * c.size);
-      c.g.position.set((r.left + r.width / 2 - vw / 2) / ppu, (vh / 2 - (r.bottom + 4 - 10 * c.lit)) / ppu, 0);   // lifted a little when lit
+      c.g.position.set((r.left + r.width / 2 - vw / 2) / ppu, (vh / 2 - (r.bottom + 4 - 10 * c.lit)) / ppu + c.lift * c.g.scale.y, 0);   // lifted a little when lit
       const faceCam = c.turnLimit !== undefined ? -Math.atan2(c.g.position.x, SHELF_D) : 0;   // a candle built from one photo faces the camera wherever it stands on the shelf, or the view from the side adds to its turn
       c.g.rotation.y = c.turn + faceCam + (reduce ? 0 : Math.sin(t * 0.4 + i) * Math.min(0.25, c.turnLimit ?? 1) * c.lit);
       const dim = 0.62 + 0.38 * c.lit;                                // the unlit ones are dimmer
