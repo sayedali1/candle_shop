@@ -116,7 +116,10 @@ export function makeBuilder(THREE) {
   });
 
   /* ---------- textures a material can ask for ---------- */
+  const WHITE = new THREE.DataTexture(new Uint8Array([255, 255, 255, 255]), 1, 1); WHITE.needsUpdate = true;
   const painters = {
+    /* a picture made from the candle's own photo (tools/gen_mermaid.py unwraps a glass layer into one): "src" its path */
+    photo: (t) => { const x = new THREE.TextureLoader().load(t.src); x.colorSpace = THREE.SRGBColorSpace; x.anisotropy = 4; return x; },
     /* wax poured in two colours and stirred: a base colour with pale ribbons, and soft shade where things stand on it. "shadows": [[x, z, r]] in the part's own units, "a" and "r" its size */
     marble: (t) => canvasTexture(1024, 512, (g, w, h) => {
       g.fillStyle = t.base || '#5aa3d8'; g.fillRect(0, 0, w, h);
@@ -360,6 +363,7 @@ for (int bi = 0; bi < 4; bi++) { if (uBare[bi].w > 0.0 && distance(vObj, uBare[b
           o.map = texCache.get(tk);
         }
       }
+      if (d.selfLight) { o.lightMap = WHITE; o.lightMapIntensity = d.selfLight; }      // "selfLight": a photo texture keeps the light it was photographed in (gel seen through glass), so the room's dim light does not hide its detail
       if (d.glass) { o.transparent = true; o.opacity = d.opacity; o.depthWrite = false; }
       o.side = d.side === 'back' ? THREE.BackSide : (d.glass || d.side === 'double') ? THREE.DoubleSide : THREE.FrontSide;
       o.emissive = color(d.glowColor || '#ff9a40'); o.emissiveIntensity = 0;
