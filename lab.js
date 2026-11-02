@@ -110,7 +110,8 @@ function layoutPhoto() {
     px(canvas, l0, t0, cw * k, ch * k);                                    // the 3D is drawn only for the part of the photo we look at ("crop": photo pixels)...
     px(ov, l0 - cr[0] * k, t0 - cr[1] * k, nw * k, nh * k);                // ...and the photo is laid under the same frame
     v.style.overflow = 'hidden'; ov.style.objectFit = 'fill';
-    if (cropRect) camera.setViewOffset(nw, nh, cr[0], cr[1], cw, ch); else camera.clearViewOffset();
+    const u0 = photoCam?.u0 || 0, v0 = photoCam?.v0 || 0;               // a measured camera may sit off the picture's middle (tools/gen_mermaid.py, gen_knot.py): shift the frame the same way
+    if (cropRect || u0 || v0) camera.setViewOffset(nw, nh, cr[0] - u0, cr[1] - v0, cw, ch); else camera.clearViewOffset();
     renderer.setPixelRatio(cropRect ? 1 : Math.min(devicePixelRatio || 1, 2));
   } else { els.forEach(e => { e.style.inset = ''; e.style.left = e.style.top = e.style.width = e.style.height = ''; }); ov.style.objectFit = 'contain'; camera.clearViewOffset(); }
   resize();

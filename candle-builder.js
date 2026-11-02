@@ -227,7 +227,12 @@ export function makeBuilder(THREE) {
         const pa = g.attributes.position;
         for (let i = 0; i < pa.count; i++) {
           const x = pa.getX(i), z = pa.getZ(i);
-          if (Math.hypot(x, z) > 0.001) { const f = 1 + p.ribs.depth * Math.cos(Math.atan2(z, x) * p.ribs.count); pa.setX(i, x * f); pa.setZ(i, z * f); }
+          if (Math.hypot(x, z) > 0.001) {
+            const a = Math.atan2(z, x) * p.ribs.count;
+            const f = p.ribs.shape === 'flute' ? 1 - p.ribs.depth + p.ribs.depth * Math.abs(Math.cos(a / 2))   // "flute": round crests with a narrow sharp groove between, like a fluted mould
+                                               : 1 + p.ribs.depth * Math.cos(a);
+            pa.setX(i, x * f); pa.setZ(i, z * f);
+          }
         }
         g.computeVertexNormals();
       }
@@ -243,6 +248,23 @@ export function makeBuilder(THREE) {
       g.rotateX(-Math.PI / 2); g.translate(0, bv, 0);
       const P = g.attributes.position, U = g.attributes.uv, L = p.a + p.r;
       for (let i = 0; i < P.count; i++) U.setXY(i, (P.getX(i) + L) / (2 * L), (P.getZ(i) + p.r) / (2 * p.r));   // the top carries the whole picture once
+      return g;
+    },
+    /* a twisted wax rope tied round a candle: a ring of radius "r" (lying flat), "tube" thick, made of "strands" (3) twisted "twist" times round the ring, grooves "depth" deep, "around" points round the tube (16; more for many strands); "flat" below 1 squashes it into a band that stands out less than it is tall.
+       A piece instead of a ring (the crossing strand of a knot): "start" and "arc" in radians (0 = right, 1.57 = front, growing toward the left), its ends tapered; "rise" lifts it from start to end */
+    rope: (p) => {
+      const U = p.segments || 200, V = p.around || 16, S = p.strands || 3, T = p.twist ?? 40, D = p.depth ?? 0.14, A = p.arc ?? Math.PI * 2, part = A < 6.28, pos = [], idx = [];
+      for (let i = 0; i <= U; i++) {
+        const u = i / U, th = (p.start || 0) + u * A, c = Math.cos(th), s = Math.sin(th), y0 = (p.rise || 0) * u;
+        const taper = part ? Math.sqrt(Math.min(1, Math.min(u, 1 - u) / 0.15)) : 1;
+        for (let j = 0; j <= V; j++) {
+          const ph = j / V * Math.PI * 2, rr = taper * p.tube * (1 - D + D * Math.abs(Math.cos((S * ph + T * th) / 2)));   // each strand a round bulge, a groove between
+          const out = p.r + rr * Math.cos(ph) * (p.flat ?? 1);
+          pos.push(out * c, y0 + rr * Math.sin(ph), out * s);
+        }
+      }
+      for (let i = 0; i < U; i++) for (let j = 0; j < V; j++) { const a = i * (V + 1) + j, b = a + V + 1; idx.push(a, a + 1, b, b, a + 1, b + 1); }
+      const g = new THREE.BufferGeometry(); g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3)); g.setIndex(idx); g.computeVertexNormals();
       return g;
     },
     disc: (p) => new THREE.CircleGeometry(p.r, 48).rotateX(-Math.PI / 2),
@@ -520,6 +542,7 @@ for (int bi = 0; bi < 4; bi++) { if (uBare[bi].w > 0.0 && distance(vObj, uBare[b
           const mm = o.material; mm.envMapIntensity = recipe.modelEnv ?? 0.3; mm.roughness = Math.max(mm.roughness ?? 0.8, recipe.modelRough ?? 0.7); mm.metalness = 0;
           if (mm.color) tints.push({ m: mm, base: mm.color.clone() });
           mm.emissive = new THREE.Color(recipe.modelGlowColor || '#ff9a50'); if (mm.map) mm.emissiveMap = mm.map; mm.emissiveIntensity = 0;
+          if (recipe.modelSelfLight) { mm.lightMap = WHITE; mm.lightMapIntensity = recipe.modelSelfLight; }   // like a material's "selfLight": a photo skin keeps its own light
           glows.push({ m: mm, k: recipe.modelGlow ?? 0.18 });
         });
         group.add(m); res(m);
