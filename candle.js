@@ -4,7 +4,7 @@
    DRAFT: shapes, colors and light are placeholders until the brand stage.
    Scrolling the hero turns the candle and moves the camera closer. */
 
-import { makeBuilder, customize } from './candle-builder.js?v=35';
+import { makeBuilder, customize } from './candle-builder.js?v=36';
 
 const hero = document.getElementById('hero');
 const stage = document.getElementById('stage');
@@ -858,8 +858,11 @@ shelf candles built ${shelfCandles.filter(Boolean).length} of ${shelfItems.lengt
     if (!slotsReady()) initSlotsStep();                           // first the hidden renderer, in its small steps
     else if (tasks.length) tasks.shift()();
     else {
-      const i = recipes.length ? shelfCandles.findIndex(c => !c) : -1;
-      if (i < 0) return;
+      // candles drawn in code cost nothing to download and are built ahead; a candle from a 3D file (a download of its own) only once its shelf
+      // is within about two screens, so a visitor who never reaches that shelf never downloads it
+      const near = k => { const r = shelfEls[shelfOf[k]]?.getBoundingClientRect(); return !r || (r.top < innerHeight * 2.5 && r.bottom > -innerHeight * 1.5); };
+      const i = recipes.length ? shelfCandles.findIndex((c, k) => !c && (!recipes[k % recipes.length].model || near(k))) : -1;
+      if (i < 0) { if (shelfCandles.some(c => !c)) setTimeout(() => idle(warm), 700); return; }   // the rest waits for the visitor to come closer
       prepare(shelfCandles[i] = makeShelfCandle(shelfItems[i], i));
     }
     setTimeout(() => idle(warm), slotsReady() ? 60 : 250);

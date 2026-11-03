@@ -566,6 +566,7 @@ for (int bi = 0; bi < 4; bi++) { if (uBare[bi].w > 0.0 && distance(vObj, uBare[b
         m.rotation.y = recipe.modelTurn || 0;
         m.traverse(o => {
           if (!o.isMesh || !o.material) return;
+          if (!o.geometry.attributes.normal) o.geometry.computeVertexNormals();   // tools/shrink_glb.py leaves normals out: the same averaging, done here
           const mat = o.material; o.material = mat.isMeshStandardMaterial ? mat : new THREE.MeshStandardMaterial({ map: mat.map, color: mat.color });
           const mm = o.material; mm.envMapIntensity = recipe.modelEnv ?? 0.3; mm.roughness = Math.max(mm.roughness ?? 0.8, recipe.modelRough ?? 0.7); mm.metalness = 0;
           if (mm.color) tints.push({ m: mm, base: mm.color.clone() });
