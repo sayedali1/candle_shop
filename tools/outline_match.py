@@ -196,7 +196,29 @@ def stadium(p, n=360):
     return np.vstack(pts)
 
 
-SHAPES = {'lathe': lathe, 'rope': rope, 'path': path, 'cylinder': cylinder, 'torus': torus, 'sphere': sphere, 'stadium': stadium}
+def roundbox(p, n=40):
+    """builder 'roundbox': rounded rectangle w x d, corner r, height h, top optionally cut by 'slant' [y at -x, y at +x]; points over its whole surface"""
+    w, d, r, h = p['w'], p['d'], p['r'], p['h']; ring = []
+    for cx, cz, a0 in ((w / 2 - r, d / 2 - r, 0), (-(w / 2 - r), d / 2 - r, math.pi / 2), (-(w / 2 - r), -(d / 2 - r), math.pi), (w / 2 - r, -(d / 2 - r), 1.5 * math.pi)):
+        for t in np.linspace(a0, a0 + math.pi / 2, n): ring.append((cx + r * math.cos(t), cz + r * math.sin(t)))
+    ring = np.array(ring); out = []
+    for k in np.linspace(0, 1, 10):
+        for x, z in ring * k if k > 0 else ring[:1] * 0:
+            top = p['slant'][0] + (p['slant'][1] - p['slant'][0]) * (x / w + 0.5) if p.get('slant') else h
+            out += [[x, y, z] for y in np.linspace(0, top, 24)]
+    return np.array(out)
+
+
+def hearts(p):
+    """builder 'hearts': each heart as a filled disc of its width and thickness, turned as placed"""
+    w, t = p['w'], p['t']; a, b = np.meshgrid(np.linspace(-0.5, 0.5, 9), np.linspace(-0.5, 0.5, 9)); disc = np.c_[a.ravel(), b.ravel()][np.hypot(a.ravel(), b.ravel()) <= 0.5] * w
+    base = np.vstack([np.c_[disc, np.full(len(disc), zz)] for zz in (-t / 2, 0, t / 2)]); out = []
+    for x, y, z, rx, ry, rz, sc in p['inst']:
+        out.append((base * sc) @ euler_xyz(rx, ry, rz).T + [x, y, z])
+    return np.vstack(out)
+
+
+SHAPES = {'roundbox': roundbox, 'hearts': hearts, 'lathe': lathe, 'rope': rope, 'path': path, 'cylinder': cylinder, 'torus': torus, 'sphere': sphere, 'stadium': stadium}
 objs = sorted({k.rsplit('_', 1)[0] for k in TR}); size = R.get('size', 1)
 masks, skipped = {}, set()
 for o in objs:

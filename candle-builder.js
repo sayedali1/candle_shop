@@ -245,6 +245,22 @@ export function makeBuilder(THREE) {
       return g;
     },
     cylinder: (p) => new THREE.CylinderGeometry(p.r, p.rb ?? p.r, p.h, p.segments || 64, 1, !!p.open, p.thetaStart, p.thetaLength),
+    /* a rounded-square jar or slab: "w" wide (x), "d" deep (z), "h" tall, corner radius "r", "hole" (a wall this thick, open top and bottom: the glass),
+       "slant" [height at -x, height at +x] (a wax top poured at a tilt: the top face is cut by that plane), "bevel" (rounded top edge) */
+    roundbox: (p) => {
+      const outline = (o, w, d, r) => { const a = w / 2 - r, b = d / 2 - r; o.moveTo(-a, -d / 2); o.lineTo(a, -d / 2); o.absarc(a, -b, r, -Math.PI / 2, 0, false); o.lineTo(w / 2, b);
+        o.absarc(a, b, r, 0, Math.PI / 2, false); o.lineTo(-a, d / 2); o.absarc(-a, b, r, Math.PI / 2, Math.PI, false); o.lineTo(-w / 2, -b); o.absarc(-a, -b, r, Math.PI, Math.PI * 1.5, false); return o; };
+      const sh = outline(new THREE.Shape(), p.w, p.d, p.r), bv = p.bevel ?? 0;
+      if (p.hole) sh.holes.push(outline(new THREE.Path(), p.w - 2 * p.hole, p.d - 2 * p.hole, Math.max(p.r - p.hole, 0.002)));
+      const g = new THREE.ExtrudeGeometry(sh, { depth: p.h - 2 * bv, bevelEnabled: bv > 0, bevelSize: bv, bevelThickness: bv, bevelOffset: -bv, bevelSegments: 3, curveSegments: 10 });
+      g.rotateX(-Math.PI / 2); g.translate(0, bv, 0);
+      if (p.slant) {                                             // every point on the top face goes down to the tilted plane: y from slant[0] at x = -w/2 to slant[1] at +w/2
+        const P = g.attributes.position;
+        for (let i = 0; i < P.count; i++) if (P.getY(i) > p.h * 0.5) { const t = P.getX(i) / p.w + 0.5; P.setY(i, P.getY(i) - p.h + p.slant[0] + (p.slant[1] - p.slant[0]) * t); }
+        g.computeVertexNormals();
+      }
+      return g;
+    },
     /* an oval tray or slab with straight sides and round ends: "a" half the straight part, "r" the end radius, "h" height, "bevel", "hole" (a rim this wide, open in the middle) */
     stadium: (p) => {
       const outline = (o, a, r) => { o.moveTo(-a, -r); o.lineTo(a, -r); o.absarc(a, 0, r, -Math.PI / 2, Math.PI / 2, false); o.lineTo(-a, r); o.absarc(-a, 0, r, Math.PI / 2, Math.PI * 1.5, false); return o; };
@@ -418,6 +434,20 @@ for (int bi = 0; bi < 4; bi++) { if (uBare[bi].w > 0.0 && distance(vObj, uBare[b
       o.side = d.side === 'back' ? THREE.BackSide : (d.glass || d.side === 'double') ? THREE.DoubleSide : THREE.FrontSide;
       o.emissive = color(d.glowColor || '#ff9a40'); o.emissiveIntensity = 0;
       const m = new THREE.MeshPhysicalMaterial(o);
+      if (d.glass && d.edge) {                                    // "edge": real glass is clear face-on and bright, reflective and denser where it is seen at a slant (its walls edge-on,
+        const E = d.edge;                                         // the curve of a corner): opacity and light rise toward grazing angles. {opacity, light, power}. No refraction: phones first
+        m.onBeforeCompile = (sh) => {
+          sh.uniforms.uEdgeA = { value: E.opacity ?? 0.55 }; sh.uniforms.uEdgeL = { value: E.light ?? 0.35 }; sh.uniforms.uEdgeP = { value: E.power ?? 2.5 }; sh.uniforms.uSpec = { value: E.reflect ?? 0 };
+          sh.fragmentShader = sh.fragmentShader.replace('#include <common>', '#include <common>\nuniform float uEdgeA, uEdgeL, uEdgeP, uSpec;')
+            .replace('#include <opaque_fragment>', `float edgeF = pow(1.0 - abs(dot(normalize(vViewPosition), normal)), uEdgeP);
+diffuseColor.a = mix(diffuseColor.a, uEdgeA, edgeF); outgoingLight += diffuseColor.rgb * uEdgeL * edgeF;
+float specB = max(outgoingLight.r, max(outgoingLight.g, outgoingLight.b));          // "reflect": a reflection (a window strip, the flame's glint) shows at its own strength,
+diffuseColor.a = max(diffuseColor.a, clamp((specB - 0.15) * uSpec, 0.0, 0.85));      // not faded with the clear glass
+#include <opaque_fragment>`);
+        };
+        m.customProgramCacheKey = () => 'glassEdge';
+        if (E.reflect) m.color.multiplyScalar(0.35);                // clear glass barely lights up itself: what shows is what it reflects
+      }
       if (!d.glass || d.tint) tints.push({ m, base: o.color.clone() });      // unlit candles are dimmer; glass is not tinted
       if (d.glow) glows.push({ m, k: d.glow });
       if (key) cache[key] = m;
@@ -502,6 +532,19 @@ for (int bi = 0; bi < 4; bi++) { if (uBare[bi].w > 0.0 && distance(vObj, uBare[b
         if (!geoCache.has(dk)) geoCache.set(dk, new THREE.SphereGeometry(p.r, 16, 12));
         if (p.inst) { group.add(placeMany(new THREE.InstancedMesh(geoCache.get(dk), m, p.inst.length), p.inst, p.scale)); return; }   // many of them, one draw call
         p.at.forEach(([x, y, z]) => { const d = new THREE.Mesh(geoCache.get(dk), m); d.position.set(x, y, z); if (p.scale) d.scale.set(...p.scale); if (p.rot) d.rotation.y = p.rot; group.add(d); });
+      } else if (p.shape === 'hearts') {                          // little wax hearts, one instanced mesh: "w" heart width, "t" thickness, "inst" [[x,y,z,rx,ry,rz,s],...] (tools/gen_hearts_jar.py)
+        const hk = 'heart' + p.w + '_' + p.t;
+        if (!geoCache.has(hk)) {
+          const w = p.w, s = new THREE.Shape();                    // a heart, point down, as the mould's hearts: two round lobes meeting in a dip, sides running to the point
+          s.moveTo(0, -0.5 * w); s.bezierCurveTo(0.12 * w, -0.36 * w, 0.5 * w, -0.08 * w, 0.5 * w, 0.18 * w); s.bezierCurveTo(0.5 * w, 0.42 * w, 0.26 * w, 0.52 * w, 0.14 * w, 0.48 * w);
+          s.bezierCurveTo(0.06 * w, 0.46 * w, 0.01 * w, 0.4 * w, 0, 0.34 * w); s.bezierCurveTo(-0.01 * w, 0.4 * w, -0.06 * w, 0.46 * w, -0.14 * w, 0.48 * w);
+          s.bezierCurveTo(-0.26 * w, 0.52 * w, -0.5 * w, 0.42 * w, -0.5 * w, 0.18 * w); s.bezierCurveTo(-0.5 * w, -0.08 * w, -0.12 * w, -0.36 * w, 0, -0.5 * w);
+          const bv = p.t * 0.18, hg = new THREE.ExtrudeGeometry(s, { depth: p.t - 2 * bv, bevelEnabled: true, bevelSize: bv, bevelThickness: bv, bevelSegments: 2, curveSegments: 8 });
+          hg.translate(0, 0, -p.t / 2 + bv); geoCache.set(hk, hg);
+        }
+        const im = new THREE.InstancedMesh(geoCache.get(hk), m, p.inst.length), M = new THREE.Matrix4(), q = new THREE.Quaternion(), E = new THREE.Euler(), P = new THREE.Vector3(), S = new THREE.Vector3();
+        p.inst.forEach(([x, y, z, rx, ry, rz, sc = 1], i) => { M.compose(P.set(x, y, z), q.setFromEuler(E.set(rx, ry, rz)), S.setScalar(sc)); im.setMatrixAt(i, M); });
+        im.instanceMatrix.needsUpdate = true; im.frustumCulled = false; group.add(place(im, { pos: p.pos, rot: p.rot }));
       } else if (p.shape === 'tufts') {                           // real curl lumps standing on a body: one instanced mesh, each curl placed, sized and coloured by tools/gen_curls.py
         const ck = 'curlGeo' + (p.detail ?? 1);
         if (!geoCache.has(ck)) geoCache.set(ck, curlGeometry(p.detail ?? 1));
