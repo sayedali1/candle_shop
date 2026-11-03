@@ -35,13 +35,19 @@ b = open(os.path.join(ROOT, 'assets', 'models', f'{name}.glb'), 'rb').read(); n 
 def acc(i, c):
     a = js['accessors'][i]; bv = js['bufferViews'][a['bufferView']]
     return np.frombuffer(bin_, dtype='<f4', count=a['count'] * c, offset=bv.get('byteOffset', 0) + a.get('byteOffset', 0)).reshape(-1, c)
-V, UV = acc(0, 3).astype(float), acc(2, 2).astype(float); nv = len(V) // 2; Vf, Uf = V[:nv], UV[:nv]
-ys_m, xs_m = np.where(inside); X0, Y0 = max(xs_m.min() - 8, 0), max(ys_m.min() - 8, 0); cw, ch = min(xs_m.max() + 9, W) - X0, min(ys_m.max() + 9, H) - Y0
-pxv = Uf[:, 0] * 2 * cw - 0.5 + X0; pyv = Uf[:, 1] * ch - 0.5 + Y0; tree = cKDTree(np.c_[pxv, pyv])
+V = acc(0, 3).astype(float); Vf = V[:len(V) // 2]
 pose = json.load(open(os.path.join(HERE, 'fit', f'pose-{name}.json')))['camera']; T = np.array(pose['target']) / SIZE; d = pose['dist'] / SIZE
 cam = T + d * np.array([math.sin(pose['yaw']) * math.cos(pose['pitch']), math.sin(pose['pitch']), math.cos(pose['yaw']) * math.cos(pose['pitch'])])
-F = (H / 2) / math.tan(math.radians(pose['fov']) / 2)
+fz = (T - cam) / np.linalg.norm(T - cam); rt = np.cross(fz, [0, 1, 0]); rt /= np.linalg.norm(rt); up = np.cross(rt, fz)
+F = (H / 2) / math.tan(math.radians(pose['fov']) / 2); RL = pose.get('roll', 0)
 
+
+def project(p):                                                        # the photo's camera (the same as tools/outline_match.py): surface point -> photo pixel
+    q = np.atleast_2d(p) - cam; z = q @ fz; xr, yr = q @ rt / z * F, q @ up / z * F
+    return np.stack([W / 2 + pose.get('u0', 0) + xr * math.cos(RL) - yr * math.sin(RL), H / 2 + pose.get('v0', 0) - (xr * math.sin(RL) + yr * math.cos(RL))], 1)
+
+
+pv = project(Vf); tree = cKDTree(pv)                                   # each floret takes the surface point seen at its own pixel
 r = json.load(open(os.path.join(ROOT, 'recipes', f'{name}.json'), encoding='utf-8')); parts = [p for p in r.get('parts', []) if not p.get('material', '').startswith('floret')]
 chk = im.copy(); dr = ImageDraw.Draw(chk); total = 0
 for key, mk, ring in (('floret_cream', cream, (0, 160, 255)), ('floret_pink', pink, (0, 255, 0))):
